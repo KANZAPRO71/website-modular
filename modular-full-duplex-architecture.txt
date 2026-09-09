@@ -1,0 +1,83 @@
+===============================================================================
+BLUEPRINT ARSITEKTUR: MODULAR FULL-DUPLEX VOICE WIDGET (E-COMMERCE OVERLAY)
+===============================================================================
+
+1. STRUKTUR FOLDER INTEGRASI (Pada Boilerplate Next.js / React)
+────────────────────────────────────────────────────────────────────────────────
+Bila Anda melakukan clone terhadap repo Shopco atau Noor-E-Awadh, Anda cukup
+menyuntikkan satu direktori modular di tingkat root atau komponen untuk mengelola
+seluruh pipa data audio tanpa merusak arsitektur bawaan web:
+
+/src
+ ├── /components
+ │    └── /duplex-widget
+ │         ├── VoiceWidgetOverlay.tsx   <-- Komponen UI Utama (Floating & Backdrop Blur)
+ │         ├── AudioWaveform.tsx        <-- Animasi Gelombang Suara (Canvas / Web Audio API)
+ │         └── ProductMicButton.tsx     <-- Tombol Mikrofon Mini di tiap ProductCard
+ ├── /hooks
+ │    └── useFullDuplexVoice.ts         <-- Custom Hook Pengelola WebSocket & Audio Stream
+ └── /utils
+      └── audioQueueManager.ts          <-- Pengatur Antrean Buffer & Deteksi Interupsi
+
+
+2. SPESIFIKASI MODUL UTAMA & FUNGSI FULL-DUPLEX
+────────────────────────────────────────────────────────────────────────────────
+
+A. Core Streaming Client (`useFullDuplexVoice.ts`)
+   - Membuka koneksi persistent (`WebSocket`) ke backend orkestrator Anda saat 
+     halaman dimuat atau tombol mikrofon di-klik.
+   - Menggunakan `MediaRecorder API` untuk menangkap input suara pengguna, 
+     mengonversinya ke format mentah (Raw PCM / WebM Chunks), dan memompanya ke 
+     server setiap 100ms.
+   - Mendengarkan event dari server berupa:
+     - `AUDIO_CHUNK`: Serpihan suara balasan AI berbasis Base64.
+     - `SYSTEM_ACTION`: Instruksi JSON untuk memanipulasi UI (misal: buka modal,
+       tambahkan produk ke keranjang belanja).
+
+B. Engine Antrean & Interupsi (`audioQueueManager.ts`)
+   - Menggunakan `Web Audio API` (`AudioContext` dan `AudioWorklet`) untuk memutar 
+     serpihan audio dari server secara berurutan (*seamless buffering*).
+   - **Logika Interupsi (Mute-on-Speech):** Jika pengguna mulai berbicara kembali
+     saat AI sedang mengoceh, modul pembaca mikrofon lokal akan mendeteksi lonjakan
+     amplitudo suara (*VAD - Voice Activity Detection* ringan di sisi client) atau
+     menerima sinyal interupsi dari server. Detektor ini akan langsung memanggil:
+     `audioContext.suspend()` atau mengosongkan antrean buffer array secara instan.
+     Hasilnya, suara AI langsung terpotong secara alami layaknya manusia.
+
+C. Suntikan Konteks Kartu Produk (`ProductMicButton.tsx`)
+   - Disisipkan langsung di dalam perulangan (`map`) komponen `ProductCard` bawaan repo.
+   - Mengirimkan properti `product_id`, `product_name`, dan `stock_status` saat di-klik.
+   - Memastikan AI langsung tahu baju mana yang sedang diinteraksikan tanpa pengguna
+     perlu menyebutkan nama produknya secara verbal.
+
+
+3. WORKFLOW PENGALIHAN HALUS & AUTOMATION (ZERO-FRICTION UX)
+────────────────────────────────────────────────────────────────────────────────
+Saat AI mendeteksi intensi pembelian ("Saya mau pesan ukuran XL satu kak"), server
+tidak menembak database butik target secara langsung, melainkan mengirimkan payload 
+aksi terstruktur kembali ke widget di browser:
+
+{
+  "type": "SYSTEM_ACTION",
+  "action": "ADD_TO_CART",
+  "payload": {
+    "productId": "SKU-9921",
+    "size": "XL",
+    "quantity": 1
+  }
+}
+
+Widget JavaScript di browser akan menangkap payload ini dan mengeksekusi manipulasi
+DOM secara lokal pada website target:
+
+```javascript
+const nativeAddToCartBtn = document.querySelector(`[data-product-id="${payload.productId}"] .add-to-cart-btn`);
+if (nativeAddToCartBtn) {
+    nativeAddToCartBtn.click(); // Memicu fungsi bawaan e-commerce target secara aman
+}
+```
+
+Dengan metode ini, widget Anda 100% aman terisolasi, bersifat plug-and-play, 
+dan siap dipasang di platform e-commerce mana pun di Indonesia hanya menggunakan 
+satu baris skrip injeksi.
+===============================================================================

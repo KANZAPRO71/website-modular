@@ -1,0 +1,16 @@
+services:
+  orchestrator:
+    build:
+      context: ./orchestrator
+      dockerfile: Dockerfile
+    container_name: duplex-orchestrator
+    ports:
+      - "${ORCHESTRATOR_PORT:-8787}:8787"
+    environment:
+      ORCHESTRATOR_PORT: 8787
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-live-preview}
+      GEMINI_VOICE: ${GEMINI_VOICE:-Aoede}
+    env_file:
+      - ./orchestrator/.env
+    restart: unless-stopped

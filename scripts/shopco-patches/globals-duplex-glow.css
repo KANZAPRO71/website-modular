@@ -1,0 +1,16 @@
+
+@keyframes duplex-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    box-shadow: inset 0 0 24px 4px rgba(59, 130, 246, 0.35);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: inset 0 0 48px 12px rgba(59, 130, 246, 0.55);
+  }
+}
+
+.duplex-product-glow {
+  animation: duplex-glow-pulse 1.2s ease-in-out infinite;
+}

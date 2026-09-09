@@ -1,0 +1,31 @@
+{
+  "name": "website-modular-full-duplex",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "mock:duplex": "node scripts/mock-duplex-server.mjs",
+    "orchestrator:install": "npm --prefix orchestrator install",
+    "orchestrator:dev": "npm --prefix orchestrator run dev",
+    "orchestrator:start": "npm --prefix orchestrator run start:build",
+    "orchestrator:docker:build": "docker compose build orchestrator",
+    "orchestrator:docker:up": "docker compose up orchestrator -d",
+    "orchestrator:docker:down": "docker compose down",
+    "orchestrator:docker:logs": "docker compose logs -f orchestrator",
+    "orchestrator:typecheck": "npm --prefix orchestrator run typecheck",
+    "setup:shopco": "node scripts/setup-shopco.mjs",
+    "dev:shopco": "npm run setup:shopco && npm --prefix shopco run dev",
+    "dev:full-duplex": "npm run orchestrator:install && npm run setup:shopco"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "typescript": "^5.8.3",
+    "ws": "^8.18.3"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "butik-duplex-orchestrator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-Duplex AI Orchestrator powered by Gemini 3.1 Flash Live Preview",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/ws-gateway.js",
+    "start:build": "npm run build && node dist/ws-gateway.js",
+    "dev": "tsx watch src/ws-gateway.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^2.21.0",
+    "dotenv": "^16.4.7",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "@types/ws": "^8.5.14",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}
