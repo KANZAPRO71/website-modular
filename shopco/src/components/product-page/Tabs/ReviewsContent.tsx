@@ -17,7 +17,7 @@ const ReviewsContent = () => {
       <div className="flex items-center justify-between flex-col sm:flex-row mb-5 sm:mb-6">
         <div className="flex items-center mb-4 sm:mb-0">
           <h3 className="text-xl sm:text-2xl font-bold text-black mr-2">
-            Semua Ulasan
+            All Reviews
           </h3>
           <span className="text-sm sm:text-base text-black/60">(451)</span>
         </div>
@@ -27,9 +27,9 @@ const ReviewsContent = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="latest">Terbaru</SelectItem>
-              <SelectItem value="most-relevant">Paling relevan</SelectItem>
-              <SelectItem value="oldest">Terlama</SelectItem>
+              <SelectItem value="latest">Latest</SelectItem>
+              <SelectItem value="most-relevant">Most Relevant</SelectItem>
+              <SelectItem value="oldest">Oldest</SelectItem>
             </SelectContent>
           </Select>
 
@@ -37,7 +37,7 @@ const ReviewsContent = () => {
             type="button"
             className="sm:min-w-[166px] px-4 py-3 sm:px-5 sm:py-4 rounded-full bg-black font-medium text-xs sm:text-base h-12"
           >
-            Tulis Ulasan
+            Write a Review
           </Button>
         </div>
       </div>
@@ -51,7 +51,7 @@ const ReviewsContent = () => {
           href="#"
           className="inline-block w-[230px] px-11 py-4 border rounded-full hover:bg-black hover:text-white text-black transition-all font-medium text-sm sm:text-base border-black/10"
         >
-          Muat Ulasan Lainnya
+          Load More Reviews
         </Link>
       </div>
     </section>

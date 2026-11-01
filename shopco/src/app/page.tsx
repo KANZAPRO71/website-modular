@@ -1,4 +1,5 @@
 import ProductListSec from "@/components/common/ProductListSec";
+import PersonalizedRecommendations from "@/components/common/PersonalizedRecommendations";
 import Brands from "@/components/homepage/Brands";
 import DressStyle from "@/components/homepage/DressStyle";
 import Header from "@/components/homepage/Header";
@@ -16,7 +17,7 @@ export default function Home() {
       <Brands />
       <main className="my-[50px] sm:my-[72px]">
         <ProductListSec
-          title="Koleksi Terbaru"
+          title="NEW ARRIVALS"
           data={newArrivalsData}
           viewAllLink="/shop#new-arrivals"
         />
@@ -25,10 +26,13 @@ export default function Home() {
         </div>
         <div className="mb-[50px] sm:mb-20">
           <ProductListSec
-            title="Terlaris"
+            title="TOP SELLING"
             data={topSellingData}
             viewAllLink="/shop#top-selling"
           />
+        </div>
+        <div className="mb-[50px] sm:mb-20">
+          <PersonalizedRecommendations />
         </div>
         <div className="mb-[50px] sm:mb-20">
           <DressStyle />

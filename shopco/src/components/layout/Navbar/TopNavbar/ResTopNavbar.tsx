@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import Image from "next/image";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn, publicAssetPath } from "@/lib/utils";
 import { integralCF } from "@/styles/fonts";
 import { NavMenu } from "../navbar.types";
 import {
@@ -25,7 +25,7 @@ const ResTopNavbar = ({ data }: { data: NavMenu }) => {
       <SheetTrigger asChild className="cursor-pointer">
         <Image
           priority
-          src="/icons/menu.svg"
+          src={publicAssetPath("/icons/menu.svg")}
           height={100}
           width={100}
           alt="menu"

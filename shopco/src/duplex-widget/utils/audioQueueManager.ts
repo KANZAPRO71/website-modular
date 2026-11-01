@@ -81,10 +81,6 @@ export class AudioQueueManager {
     }
 
     this.scheduledSources = [];
-
-    if (this.context?.state === 'running') {
-      void this.context.suspend().then(() => this.context?.resume());
-    }
   }
 
   async destroy(): Promise<void> {

@@ -14,6 +14,38 @@ import { AudioQueueManager } from '../utils/audioQueueManager';
 import { downsampleFloat32ToPcm16, GEMINI_INPUT_RATE, pcm16ToBase64 } from '../utils/pcmCapture';
 
 const DEFAULT_CHUNK_INTERVAL_MS = 100;
+const PCM_CAPTURE_WORKLET_URL = '/pcm-capture-worklet.js';
+const SPEAKING_GRACE_MS = 1_200;
+const SPEECH_CONFIRMATION_FRAMES = 8;
+const captureWorkletModules = new WeakMap<AudioContext, Promise<void>>();
+
+type MicCaptureNode = AudioWorkletNode | ScriptProcessorNode;
+
+async function createMicCaptureNode(
+  audioContext: AudioContext,
+  onSamples: (samples: Float32Array) => void,
+): Promise<MicCaptureNode> {
+  try {
+    let modulePromise = captureWorkletModules.get(audioContext);
+    if (!modulePromise) {
+      modulePromise = audioContext.audioWorklet.addModule(PCM_CAPTURE_WORKLET_URL);
+      captureWorkletModules.set(audioContext, modulePromise);
+    }
+    await modulePromise;
+
+    const worklet = new AudioWorkletNode(audioContext, 'pcm-capture-processor', {
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
+    });
+    worklet.port.onmessage = (event: MessageEvent<Float32Array>) => onSamples(event.data);
+    return worklet;
+  } catch {
+    const processor = audioContext.createScriptProcessor(2048, 1, 1);
+    processor.onaudioprocess = (event) => onSamples(event.inputBuffer.getChannelData(0));
+    return processor;
+  }
+}
 
 export function useFullDuplexVoice(options: UseFullDuplexVoiceOptions): UseFullDuplexVoiceReturn {
   const {
@@ -37,7 +69,7 @@ export function useFullDuplexVoice(options: UseFullDuplexVoiceOptions): UseFullD
   const wsRef = useRef<WebSocket | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const micAnalyserRef = useRef<AnalyserNode | null>(null);
-  const pcmProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const pcmProcessorRef = useRef<MicCaptureNode | null>(null);
   const pcmSinkRef = useRef<GainNode | null>(null);
   const vadFrameRef = useRef<number | null>(null);
   const audioQueueRef = useRef<AudioQueueManager | null>(null);
@@ -130,6 +162,7 @@ export function useFullDuplexVoice(options: UseFullDuplexVoiceOptions): UseFullD
     }
 
     const buffer = new Float32Array(analyser.fftSize);
+    let speechFrames = 0;
 
     const tick = () => {
       analyser.getFloatTimeDomainData(buffer);
@@ -140,11 +173,19 @@ export function useFullDuplexVoice(options: UseFullDuplexVoiceOptions): UseFullD
       }
 
       const rms = Math.sqrt(sumSquares / buffer.length);
-      const speakingGraceMs = 900;
       const pastGracePeriod =
-        Date.now() - speakingStartedAtRef.current > speakingGraceMs;
+        Date.now() - speakingStartedAtRef.current > SPEAKING_GRACE_MS;
+      const assistantIsSpeaking = getAudioQueue().isPlaying;
 
-      if (rms > vadThreshold && getAudioQueue().isPlaying && pastGracePeriod) {
+      if (rms > vadThreshold && assistantIsSpeaking && pastGracePeriod) {
+        speechFrames += 1;
+      } else {
+        speechFrames = 0;
+      }
+
+      if (speechFrames >= SPEECH_CONFIRMATION_FRAMES) {
+        speechFrames = 0;
+        speakingStartedAtRef.current = Date.now();
         interrupt();
       }
 
@@ -333,8 +374,13 @@ export function useFullDuplexVoice(options: UseFullDuplexVoiceOptions): UseFullD
     stopVadLoop();
 
     if (pcmProcessorRef.current) {
-      pcmProcessorRef.current.disconnect();
-      pcmProcessorRef.current.onaudioprocess = null;
+      const processor = pcmProcessorRef.current;
+      processor.disconnect();
+      if ('onaudioprocess' in processor) {
+        processor.onaudioprocess = null;
+      } else {
+        processor.port.onmessage = null;
+      }
       pcmProcessorRef.current = null;
     }
 
@@ -358,78 +404,90 @@ export function useFullDuplexVoice(options: UseFullDuplexVoiceOptions): UseFullD
         productContextRef.current = context;
       }
 
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        await connect();
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
-
-      mediaStreamRef.current = stream;
-
-      const audioContext = await getAudioQueue().ensureContext();
-      const micSource = audioContext.createMediaStreamSource(stream);
-      const micAnalyser = audioContext.createAnalyser();
-      micAnalyser.fftSize = 512;
-      micSource.connect(micAnalyser);
-      micAnalyserRef.current = micAnalyser;
-
-      if (!sessionStartedRef.current) {
-        scheduleGreetingFallback();
-
-        wsRef.current?.send(
-          JSON.stringify({
-            type: 'SESSION_START',
-            context: productContextRef.current,
-            mode: 'voice',
-          }),
-        );
-        sessionStartedRef.current = true;
-      }
-
-      const processor = audioContext.createScriptProcessor(4096, 1, 1);
-      const sink = audioContext.createGain();
-      sink.gain.value = 0;
-
-      processor.onaudioprocess = (event) => {
-        if (wsRef.current?.readyState !== WebSocket.OPEN || !micUploadEnabledRef.current) {
-          return;
+      try {
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+          await connect();
         }
 
-        const pcm16 = downsampleFloat32ToPcm16(
-          event.inputBuffer.getChannelData(0),
-          audioContext.sampleRate,
-          GEMINI_INPUT_RATE,
-        );
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
 
-        wsRef.current.send(
-          JSON.stringify({
-            type: 'AUDIO_CHUNK',
-            data: pcm16ToBase64(pcm16),
-            format: 'pcm16',
-            sampleRate: GEMINI_INPUT_RATE,
-            context: productContextRef.current,
-          }),
-        );
-      };
+        mediaStreamRef.current = stream;
 
-      micSource.connect(processor);
-      processor.connect(sink);
-      sink.connect(audioContext.destination);
+        const audioContext = await getAudioQueue().ensureContext();
+        const micSource = audioContext.createMediaStreamSource(stream);
+        const micAnalyser = audioContext.createAnalyser();
+        micAnalyser.fftSize = 512;
+        micSource.connect(micAnalyser);
+        micAnalyserRef.current = micAnalyser;
 
-      pcmProcessorRef.current = processor;
-      pcmSinkRef.current = sink;
+        if (!sessionStartedRef.current) {
+          scheduleGreetingFallback();
 
-      updateConnectionState('listening');
-      setIsListening(true);
-      startVadLoop();
+          wsRef.current?.send(
+            JSON.stringify({
+              type: 'SESSION_START',
+              context: productContextRef.current,
+              mode: 'voice',
+            }),
+          );
+          sessionStartedRef.current = true;
+        }
+
+        const sink = audioContext.createGain();
+        sink.gain.value = 0;
+        const processor = await createMicCaptureNode(audioContext, (samples) => {
+          if (wsRef.current?.readyState !== WebSocket.OPEN || !micUploadEnabledRef.current) {
+            return;
+          }
+
+          const pcm16 = downsampleFloat32ToPcm16(
+            samples,
+            audioContext.sampleRate,
+            GEMINI_INPUT_RATE,
+          );
+
+          wsRef.current.send(
+            JSON.stringify({
+              type: 'AUDIO_CHUNK',
+              data: pcm16ToBase64(pcm16),
+              format: 'pcm16',
+              sampleRate: GEMINI_INPUT_RATE,
+              context: productContextRef.current,
+            }),
+          );
+        });
+
+        micSource.connect(processor);
+        processor.connect(sink);
+        sink.connect(audioContext.destination);
+
+        pcmProcessorRef.current = processor;
+        pcmSinkRef.current = sink;
+
+        updateConnectionState('listening');
+        setIsListening(true);
+        startVadLoop();
+      } catch (error) {
+        stopListening();
+        reportError(error instanceof Error ? error : new Error(String(error)));
+        throw error;
+      }
     },
-    [connect, getAudioQueue, scheduleGreetingFallback, startVadLoop, updateConnectionState],
+    [
+      connect,
+      getAudioQueue,
+      reportError,
+      scheduleGreetingFallback,
+      startVadLoop,
+      stopListening,
+      updateConnectionState,
+    ],
   );
 
   const disconnect = useCallback(() => {

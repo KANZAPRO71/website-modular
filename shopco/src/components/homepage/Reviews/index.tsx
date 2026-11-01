@@ -68,7 +68,7 @@ const Reviews = ({ data }: ReviewsProps) => {
                 "text-[32px] leading-[36px] md:text-5xl capitalize mr-auto",
               ])}
             >
-              Pelanggan Puas Kami
+              OUR HAPPY CUSTOMERS
             </motion.h2>
             <div className="flex items-center space-x-1 ml-2">
               <CarouselPrevious variant="ghost" className="text-2xl">
@@ -98,23 +98,10 @@ const Reviews = ({ data }: ReviewsProps) => {
                                 : current + 1 > count
                                 ? 1
                                 : current + 1) === index &&
-                              "backdrop-blur-[2px]"
-                            : (current === count ? 0 : current) === index &&
-                              "backdrop-blur-[2px]",
-                          isDesktop
-                            ? (current === 1
-                                ? count - 2
-                                : current === 2
-                                ? count - 1
-                                : current - 3) === index &&
-                              "backdrop-blur-[2px]"
-                            : (current === 1
-                                ? count - 1
-                                : current === 2
-                                ? 0
-                                : current - 2) === index &&
-                              "backdrop-blur-[2px]",
-                          "absolute bg-white/10 right-0 top-0 h-full w-full z-10",
+                              "backdrop-blur-[2px] bg-white/10"
+                            : (current >= count ? 0 : current) === index &&
+                              "backdrop-blur-[2px] bg-white/10",
+                          "absolute inset-0 transition-all duration-300 z-10",
                         ])}
                       />
                     )

@@ -5,6 +5,7 @@ import { RootState } from "@/lib/store";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+import { publicAssetPath } from "@/lib/utils";
 
 const CartBtn = () => {
   const { cart } = useAppSelector((state: RootState) => state.carts);
@@ -13,7 +14,7 @@ const CartBtn = () => {
     <Link href="/cart" className="relative mr-[14px] p-1">
       <Image
         priority
-        src="/icons/cart.svg"
+        src={publicAssetPath("/icons/cart.svg")}
         height={100}
         width={100}
         alt="cart"

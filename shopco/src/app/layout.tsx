@@ -8,8 +8,8 @@ import HolyLoader from "holy-loader";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "DEVI — Butik Fashion Jakarta",
-  description: "Butik fashion lokal dengan koleksi pakaian casual hingga formal.",
+  title: "SHOP.CO — Modern E-Commerce Store",
+  description: "Discover the latest fashion trends with our curated collection of casual to formal clothing.",
 };
 
 export const viewport: Viewport = {
@@ -22,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
+    <html lang="en">
       <body className={satoshi.className}>
         <HolyLoader color="#868686" />
         <TopBanner />

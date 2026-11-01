@@ -46,13 +46,13 @@ const Header = ({ data }: { data: Product }) => {
             badgeClassName="font-medium text-[10px] sm:text-xs py-1.5 px-3.5 rounded-full bg-[#FF3333]/10 text-[#FF3333]"
           />
           <p className="text-sm sm:text-base text-black/60 mb-5">
-            Produk pilihan dari DEVI — bahan lembut dan nyaman dipakai sehari-hari,
-            cocok untuk gaya kasual maupun semi-formal.
+            This graphic t-shirt which is perfect for any occasion. Crafted from a soft
+            and breathable fabric, it offers superior comfort and style.
           </p>
           <hr className="h-[1px] border-t-black/10 mb-5" />
           <ColorSelection />
           <hr className="h-[1px] border-t-black/10 my-5" />
-          <SizeSelection />
+          <SizeSelection productId={data.id} />
           <hr className="hidden md:block h-[1px] border-t-black/10 my-5" />
           <AddToCardSection data={data} />
         </div>

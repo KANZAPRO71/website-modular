@@ -11,6 +11,7 @@ type CartCounterProps = {
   onRemove?: (value: number) => void;
   className?: string;
   initialValue?: number;
+  maxValue?: number;
 };
 
 const CartCounter = ({
@@ -19,6 +20,7 @@ const CartCounter = ({
   onRemove,
   className,
   initialValue = 1,
+  maxValue = Number.POSITIVE_INFINITY,
 }: CartCounterProps) => {
   const [counter, setCounter] = useState<number>(initialValue);
 
@@ -50,6 +52,7 @@ const CartCounter = ({
         variant="ghost"
         size="icon"
         type="button"
+        disabled={counter >= maxValue}
         className="h-5 w-5 sm:h-6 sm:w-6 text-xl hover:bg-transparent"
         onClick={() => remove()}
       >

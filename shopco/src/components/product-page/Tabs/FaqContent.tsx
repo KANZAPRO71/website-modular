@@ -13,34 +13,34 @@ type FaqItem = {
 
 const faqsData: FaqItem[] = [
   {
-    question: "Bahan produk ini apa?",
+    question: "What material is used for this product?",
     answer:
-      "Kebanyakan produk DEVI menggunakan katun premium atau campuran katun-polyester yang adem dan nyaman dipakai sehari-hari.",
+      "Most of our products are made from 100% premium combed cotton or breathable cotton blends designed for everyday comfort and durability.",
   },
   {
-    question: "Gimana cara merawat pakaiannya?",
+    question: "How should I care for and wash this garment?",
     answer:
-      "Cuci dengan mesin suhu hangat, jangan bleach. Keringkan di tempat teduh atau mesin pengering suhu rendah agar warna tetap awet.",
+      "Machine wash warm with similar colors, do not bleach. Tumble dry on low heat or hang dry to preserve print vibrancy and fabric soft feel.",
   },
   {
-    question: "Ukuran di website sudah sesuai?",
+    question: "Are the sizes true to standard sizing?",
     answer:
-      "Ya, kami pakai standar ukuran lokal. Kalau ragu, tanya langsung lewat fitur suara — tim DEVI siap bantu pilih ukuran yang pas.",
+      "Yes, our sizing follows standard international retail measurements. You can also consult our Voice AI assistant anytime for personalized fit advice.",
   },
   {
-    question: "Produk ini unisex atau khusus pria/wanita?",
+    question: "Is this item unisex or gender-specific?",
     answer:
-      "Tergantung model. Beberapa item unisex, beberapa khusus pria atau wanita — detail ada di halaman produk masing-masing.",
+      "Many of our tops and t-shirts feature a versatile unisex regular fit, while tailored pieces specify men's or women's fit in their details.",
   },
   {
-    question: "Berapa lama pengiriman?",
+    question: "How long does shipping take?",
     answer:
-      "Area Jabodetabek 1–2 hari kerja, luar kota 3–5 hari kerja. Gratis ongkir untuk pesanan di atas Rp 300.000.",
+      "Standard shipping takes 2-4 business days. Express next-day delivery options and free shipping are available on orders over $100.",
   },
   {
-    question: "Bisa retur kalau ukuran tidak pas?",
+    question: "What is your return and exchange policy?",
     answer:
-      "Bisa, dalam 7 hari sejak barang diterima. Produk harus belum dipakai dan masih ada label asli.",
+      "We offer a 30-day hassle-free return and exchange policy for unused items in their original packaging with tags attached.",
   },
 ];
 
@@ -48,7 +48,7 @@ const FaqContent = () => {
   return (
     <section>
       <h3 className="text-xl sm:text-2xl font-bold text-black mb-5 sm:mb-6">
-        Pertanyaan yang sering ditanyakan
+        Frequently Asked Questions
       </h3>
       <Accordion type="single" collapsible>
         {faqsData.map((faq, idx) => (

@@ -13,7 +13,9 @@ import {
   remove,
   removeCartItem,
 } from "@/lib/features/carts/cartsSlice";
-import { useAppDispatch } from "@/lib/hooks/redux";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks/redux";
+import { getProductInventory } from "@/data/inventory";
+import { compareArrays, publicAssetPath } from "@/lib/utils";
 
 type ProductCardProps = {
   data: CartItem;
@@ -21,6 +23,18 @@ type ProductCardProps = {
 
 const ProductCard = ({ data }: ProductCardProps) => {
   const dispatch = useAppDispatch();
+  const inventory = getProductInventory(data.id);
+  const cartItems = useAppSelector((state) => state.carts.cart?.items);
+  const otherVariantQuantity = (cartItems ?? [])
+    .filter(
+      (item) =>
+        item.id === data.id && !compareArrays(item.attributes, data.attributes)
+    )
+    .reduce((total, item) => total + item.quantity, 0);
+  const maxQuantity = Math.max(
+    data.quantity,
+    (inventory?.stock ?? 0) - otherVariantQuantity
+  );
 
   return (
     <div className="flex items-start space-x-4">
@@ -29,7 +43,7 @@ const ProductCard = ({ data }: ProductCardProps) => {
         className="bg-[#F0EEED] rounded-lg w-full min-w-[100px] max-w-[100px] sm:max-w-[124px] aspect-square overflow-hidden"
       >
         <Image
-          src={data.srcUrl}
+          src={publicAssetPath(data.srcUrl)}
           width={124}
           height={124}
           className="rounded-md w-full h-full object-cover hover:scale-110 transition-all duration-500"
@@ -63,13 +77,13 @@ const ProductCard = ({ data }: ProductCardProps) => {
           </Button>
         </div>
         <div className="-mt-1">
-          <span className="text-black text-xs md:text-sm mr-1">Ukuran:</span>
+          <span className="text-black text-xs md:text-sm mr-1">Size:</span>
           <span className="text-black/60 text-xs md:text-sm">
             {data.attributes[0]}
           </span>
         </div>
         <div className="mb-auto -mt-1.5">
-          <span className="text-black text-xs md:text-sm mr-1">Warna:</span>
+          <span className="text-black text-xs md:text-sm mr-1">Color:</span>
           <span className="text-black/60 text-xs md:text-sm">
             {data.attributes[1]}
           </span>
@@ -78,6 +92,7 @@ const ProductCard = ({ data }: ProductCardProps) => {
           <ProductPrice product={data} />
           <CartCounter
             initialValue={data.quantity}
+            maxValue={maxQuantity}
             onAdd={() => dispatch(addToCart({ ...data, quantity: 1 }))}
             onRemove={() =>
               data.quantity === 1

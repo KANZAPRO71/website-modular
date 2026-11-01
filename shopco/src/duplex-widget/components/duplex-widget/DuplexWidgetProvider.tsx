@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -48,10 +49,48 @@ interface DuplexWidgetContextValue {
   interrupt: () => void;
 }
 
+const CART_CONFIRMATIONS = new Set([
+  'yes',
+  'yeah',
+  'yep',
+  'yup',
+  'ok',
+  'okay',
+  'sure',
+  'please do',
+  'yes please',
+  'yes add it',
+  'go ahead',
+  'go ahead add it',
+  'add it',
+  'do that',
+  'iya',
+  'ya',
+  'oke',
+  'boleh',
+  'silakan',
+]);
+
 const DuplexWidgetContext = createContext<DuplexWidgetContextValue | null>(null);
 
 function createMessageId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function isExplicitCartConfirmation(text: string): boolean {
+  const confirmation = text
+    .trim()
+    .toLowerCase()
+    .replace(/[,.!?]/g, ' ')
+    .replace(/\s+/g, ' ');
+
+  return CART_CONFIRMATIONS.has(confirmation);
+}
+
+function isCartConfirmationOffer(text: string): boolean {
+  return /\b(?:want|would you like|shall|should|can i)\b.{0,100}\b(?:add|save)\b.{0,80}\b(?:to your cart|in your cart|to cart)\b/i.test(
+    text,
+  );
 }
 
 function sanitizeTranscript(text: string): string {
@@ -166,6 +205,8 @@ export function DuplexWidgetProvider({ children, ...options }: DuplexWidgetProvi
   const [interactionMode, setInteractionModeState] = useState<InteractionMode>('text');
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [highlightedProductId, setHighlightedProductId] = useState<string | null>(null);
+  const pendingCartConfirmationRef = useRef<number | null>(null);
+  const lastUserTranscriptRef = useRef('');
 
   const triggerProductHighlight = useCallback((productId: string) => {
     setHighlightedProductId(productId);
@@ -178,15 +219,43 @@ export function DuplexWidgetProvider({ children, ...options }: DuplexWidgetProvi
     ...options,
     productContext: activeProduct,
     onSystemAction: (action, payload) => {
+      if (action === 'ADD_TO_CART') {
+        const offerAt = pendingCartConfirmationRef.current;
+        const confirmed =
+          offerAt !== null &&
+          Date.now() - offerAt <= 30_000 &&
+          isExplicitCartConfirmation(lastUserTranscriptRef.current);
+        pendingCartConfirmationRef.current = null;
+        lastUserTranscriptRef.current = '';
+
+        if (!confirmed) {
+          console.warn('[DuplexWidget] blocked ADD_TO_CART without a recent explicit confirmation');
+          return;
+        }
+      }
+
       if (action === 'NAVIGATE_TO_PRODUCT') {
         setChatMessages((current) => finalizeLastAssistantMessage(current));
         triggerProductHighlight(String(payload.productId ?? ''));
       }
 
-      options.onSystemAction?.(action, payload);
-      executeSystemAction(action, payload);
+      if (options.onSystemAction) {
+        options.onSystemAction(action, payload);
+      } else {
+        executeSystemAction(action, payload);
+      }
     },
     onTranscript: (role, text, final) => {
+      if (role === 'assistant' && isCartConfirmationOffer(text)) {
+        pendingCartConfirmationRef.current = Date.now();
+        lastUserTranscriptRef.current = '';
+      } else if (role === 'user' && final) {
+        if (!isExplicitCartConfirmation(text)) {
+          pendingCartConfirmationRef.current = null;
+        }
+        lastUserTranscriptRef.current = text.trim();
+      }
+
       setChatMessages((current) =>
         appendMessage(current, role === 'user' ? 'user' : 'assistant', text, final ?? false),
       );
@@ -196,9 +265,22 @@ export function DuplexWidgetProvider({ children, ...options }: DuplexWidgetProvi
   const switchToProduct = useCallback(
     (product: ProductContext) => {
       const enriched = enrichProductContext(product);
+      pendingCartConfirmationRef.current = null;
+      lastUserTranscriptRef.current = '';
       setActiveProduct(enriched);
       setIsPanelOpen(true);
       voice.updateProductContext(enriched);
+    },
+    [voice],
+  );
+
+  const startListeningSafely = useCallback(
+    async (context?: ProductContext | null) => {
+      try {
+        await voice.startListening(context);
+      } catch (error) {
+        console.error('[DuplexWidget] Unable to start voice input', error);
+      }
     },
     [voice],
   );
@@ -211,6 +293,8 @@ export function DuplexWidgetProvider({ children, ...options }: DuplexWidgetProvi
 
       const enriched = enrichProductContext(product);
 
+      pendingCartConfirmationRef.current = null;
+      lastUserTranscriptRef.current = '';
       voice.resetSession();
       setActiveProduct(enriched);
       setChatMessages([]);
@@ -218,16 +302,22 @@ export function DuplexWidgetProvider({ children, ...options }: DuplexWidgetProvi
       setIsAudioMuted(muted);
       setIsPanelOpen(true);
 
-      await voice.startSession(enriched, mode);
+      try {
+        await voice.startSession(enriched, mode);
 
-      if (mode === 'voice' && !muted) {
-        await voice.startListening(enriched);
+        if (mode === 'voice' && !muted) {
+          await startListeningSafely(enriched);
+        }
+      } catch (error) {
+        console.error('[DuplexWidget] Unable to open voice assistant', error);
       }
     },
-    [voice],
+    [startListeningSafely, voice],
   );
 
   const closeWidget = useCallback(() => {
+    pendingCartConfirmationRef.current = null;
+    lastUserTranscriptRef.current = '';
     voice.stopListening();
     voice.resetSession();
     setIsPanelOpen(false);
@@ -243,10 +333,10 @@ export function DuplexWidgetProvider({ children, ...options }: DuplexWidgetProvi
       }
 
       if (isPanelOpen && activeProduct) {
-        void voice.startListening(activeProduct);
+        void startListeningSafely(activeProduct);
       }
     },
-    [activeProduct, isPanelOpen, voice],
+    [activeProduct, isPanelOpen, startListeningSafely, voice],
   );
 
   const setAudioMuted = useCallback(
@@ -276,8 +366,8 @@ export function DuplexWidgetProvider({ children, ...options }: DuplexWidgetProvi
       return;
     }
 
-    void voice.startListening(activeProduct);
-  }, [activeProduct, voice]);
+    void startListeningSafely(activeProduct);
+  }, [activeProduct, startListeningSafely, voice]);
 
   const value = useMemo(
     () => ({

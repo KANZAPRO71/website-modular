@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn, publicAssetPath } from "@/lib/utils";
 import { integralCF } from "@/styles/fonts";
 import Link from "next/link";
 import React from "react";
@@ -13,57 +13,58 @@ import Image from "next/image";
 import InputGroup from "@/components/ui/input-group";
 import ResTopNavbar from "./ResTopNavbar";
 import CartBtn from "./CartBtn";
+import { FiHeart } from "react-icons/fi";
 
 const data: NavMenu = [
   {
     id: 1,
-    label: "Toko",
+    label: "Shop",
     type: "MenuList",
     children: [
       {
         id: 11,
-        label: "Pakaian pria",
+        label: "Men's clothes",
         url: "/shop#men-clothes",
-        description: "Warna dan desain menarik untuk gaya harian",
+        description: "In attractive and spectacular colors and designs",
       },
       {
         id: 12,
-        label: "Pakaian wanita",
+        label: "Women's clothes",
         url: "/shop#women-clothes",
-        description: "Gaya dan selera kamu yang paling kami utamakan",
+        description: "Ladies, your style and taste are important to us",
       },
       {
         id: 13,
-        label: "Pakaian anak",
+        label: "Kids' clothes",
         url: "/shop#kids-clothes",
-        description: "Untuk segala usia, dengan warna ceria dan nyaman",
+        description: "For all ages, with happy and beautiful colors",
       },
       {
         id: 14,
-        label: "Tas dan sepatu",
+        label: "Bag & Shoes",
         url: "/shop#bag-shoes",
-        description: "Cocok untuk pria, wanita, dan berbagai gaya",
+        description: "Suitable for men, women and all tastes and styles",
       },
     ],
   },
   {
     id: 2,
     type: "MenuItem",
-    label: "Diskon",
+    label: "On Sale",
     url: "/shop#on-sale",
     children: [],
   },
   {
     id: 3,
     type: "MenuItem",
-    label: "Koleksi Baru",
+    label: "New Arrivals",
     url: "/shop#new-arrivals",
     children: [],
   },
   {
     id: 4,
     type: "MenuItem",
-    label: "Brand",
+    label: "Brands",
     url: "/shop#brands",
     children: [],
   },
@@ -84,7 +85,7 @@ const TopNavbar = () => {
               "text-2xl lg:text-[32px] mb-2 mr-3 lg:mr-10",
             ])}
           >
-            DEVI
+            SHOP.CO
           </Link>
         </div>
         <NavigationMenu className="hidden md:flex mr-2 lg:mr-7">
@@ -101,40 +102,46 @@ const TopNavbar = () => {
             ))}
           </NavigationMenuList>
         </NavigationMenu>
-        <InputGroup className="hidden md:flex bg-[#F0F0F0] mr-3 lg:mr-10">
-          <InputGroup.Text>
-            <Image
-              priority
-              src="/icons/search.svg"
-              height={20}
-              width={20}
-              alt="search"
-              className="min-w-5 min-h-5"
+        <form action={publicAssetPath("/shop")} role="search" className="hidden md:block mr-3 lg:mr-10 w-full max-w-[500px]">
+          <InputGroup className="bg-[#F0F0F0]">
+            <InputGroup.Text>
+              <Image
+                priority
+                src={publicAssetPath("/icons/search.svg")}
+                height={20}
+                width={20}
+                alt="search"
+                className="min-w-5 min-h-5"
+              />
+            </InputGroup.Text>
+            <InputGroup.Input
+              type="search"
+              name="q"
+              placeholder="Search for products..."
+              aria-label="Search products"
+              className="bg-transparent placeholder:text-black/40"
             />
-          </InputGroup.Text>
-          <InputGroup.Input
-            type="search"
-            name="search"
-            placeholder="Cari produk..."
-            className="bg-transparent placeholder:text-black/40"
-          />
-        </InputGroup>
+          </InputGroup>
+        </form>
         <div className="flex items-center">
-          <Link href="/search" className="block md:hidden mr-[14px] p-1">
+          <Link href="/shop" className="block md:hidden mr-[14px] p-1">
             <Image
               priority
-              src="/icons/search-black.svg"
+              src={publicAssetPath("/icons/search-black.svg")}
               height={100}
               width={100}
               alt="search"
               className="max-w-[22px] max-h-[22px]"
             />
           </Link>
+          <Link href="/wishlist" className="p-1 mr-2" aria-label="Wishlist">
+            <FiHeart className="h-[22px] w-[22px]" aria-hidden="true" />
+          </Link>
           <CartBtn />
-          <Link href="/#signin" className="p-1">
+          <Link href="/#" className="p-1">
             <Image
               priority
-              src="/icons/user.svg"
+              src={publicAssetPath("/icons/user.svg")}
               height={100}
               width={100}
               alt="user"

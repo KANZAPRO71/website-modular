@@ -6,52 +6,52 @@ import { cn } from "@/lib/utils";
 const footerLinksData: FooterLinks[] = [
   {
     id: 1,
-    title: "Perusahaan",
+    title: "Company",
     children: [
       {
         id: 11,
-        label: "Tentang kami",
+        label: "About",
         url: "#",
       },
       {
         id: 12,
-        label: "Fitur",
+        label: "Features",
         url: "#",
       },
       {
         id: 13,
-        label: "Karya",
+        label: "Works",
         url: "#",
       },
       {
         id: 14,
-        label: "Karier",
+        label: "Career",
         url: "#",
       },
     ],
   },
   {
     id: 2,
-    title: "Bantuan",
+    title: "Help",
     children: [
       {
         id: 21,
-        label: "Layanan pelanggan",
+        label: "Customer Support",
         url: "#",
       },
       {
         id: 22,
-        label: "Info pengiriman",
+        label: "Delivery Details",
         url: "#",
       },
       {
         id: 23,
-        label: "Syarat & ketentuan",
+        label: "Terms & Conditions",
         url: "#",
       },
       {
         id: 24,
-        label: "Kebijakan privasi",
+        label: "Privacy Policy",
         url: "#",
       },
     ],
@@ -62,48 +62,48 @@ const footerLinksData: FooterLinks[] = [
     children: [
       {
         id: 31,
-        label: "Akun",
+        label: "Account",
         url: "#",
       },
       {
         id: 32,
-        label: "Kelola pengiriman",
+        label: "Manage Deliveries",
         url: "#",
       },
       {
         id: 33,
-        label: "Pesanan",
+        label: "Orders",
         url: "#",
       },
       {
         id: 34,
-        label: "Pembayaran",
+        label: "Payments",
         url: "#",
       },
     ],
   },
   {
     id: 4,
-    title: "Info",
+    title: "Resources",
     children: [
       {
         id: 41,
-        label: "Panduan belanja",
+        label: "Free eBooks",
         url: "#",
       },
       {
         id: 42,
-        label: "Tips gaya",
+        label: "Development Tutorial",
         url: "#",
       },
       {
         id: 43,
-        label: "Blog DEVI",
+        label: "How to - Blog",
         url: "#",
       },
       {
         id: 44,
-        label: "Instagram",
+        label: "Youtube Playlist",
         url: "#",
       },
     ],

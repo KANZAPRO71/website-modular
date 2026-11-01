@@ -2,15 +2,16 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+import { publicAssetPath } from "@/lib/utils";
 
 const TopBanner = () => {
   return (
     <div className="bg-black text-white text-center py-2 px-2 sm:px-4 xl:px-0">
       <div className="relative max-w-frame mx-auto">
         <p className="text-xs sm:text-sm">
-          Daftar dan dapatkan diskon 20% untuk pesanan pertamamu.{" "}
+          Sign up and get 20% off to your first order.{" "}
           <Link href="#" className="underline font-medium">
-            Daftar Sekarang
+            Sign Up Now
           </Link>
         </p>
         <Button
@@ -22,7 +23,7 @@ const TopBanner = () => {
         >
           <Image
             priority
-            src="/icons/times.svg"
+            src={publicAssetPath("/icons/times.svg")}
             height={13}
             width={13}
             alt="close banner"

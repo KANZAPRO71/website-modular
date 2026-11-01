@@ -102,3 +102,13 @@
 .duplex-product-glow {
   animation: duplex-glow-pulse 1.2s ease-in-out infinite;
 }
+
+.shop-home-hero-art {
+  background-image: var(--hero-mobile-bg);
+}
+
+@media (min-width: 768px) {
+  .shop-home-hero-art {
+    background-image: var(--hero-desktop-bg);
+  }
+}

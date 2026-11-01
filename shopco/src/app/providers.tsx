@@ -17,7 +17,12 @@ import {
   setCartItemQuantity,
 } from "@/lib/features/carts/cartsSlice";
 import { catalogProducts } from "@/data/catalog";
-import { compareArrays } from "@/lib/utils";
+import CartRecoveryPrompt from "@/components/cart-page/CartRecoveryPrompt";
+import StoreSupportChat from "@/components/support/StoreSupportChat";
+import {
+  getProductInventory,
+  isProductSizeAvailable,
+} from "@/data/inventory";
 
 type Props = {
   children: React.ReactNode;
@@ -25,6 +30,32 @@ type Props = {
 
 const duplexWsUrl =
   process.env.NEXT_PUBLIC_DUPLEX_WS_URL ?? "ws://localhost:8787";
+
+function normalizeSize(size: string): string {
+  const normalized = size.trim().toLocaleLowerCase();
+  const aliases: Record<string, string> = {
+    s: "small",
+    m: "medium",
+    l: "large",
+    xl: "x-large",
+    "x large": "x-large",
+    "extra large": "x-large",
+  };
+
+  return aliases[normalized] ?? normalized;
+}
+
+function displaySize(size: string): string {
+  const normalized = normalizeSize(size);
+  const labels: Record<string, string> = {
+    small: "Small",
+    medium: "Medium",
+    large: "Large",
+    "x-large": "X-Large",
+  };
+
+  return labels[normalized] ?? size.trim();
+}
 
 function DuplexProviders({ children }: Props) {
   const dispatch = useAppDispatch();
@@ -41,39 +72,56 @@ function DuplexProviders({ children }: Props) {
 
       const productId = Number(payload.productId);
       const product = catalogProducts.find((item) => item.id === productId);
-      const size = String(payload.size ?? "M");
-      const attributes = [size, "Default"];
+      const requestedSize =
+        typeof payload.size === "string" ? payload.size.trim() : "";
+      const size = requestedSize ? normalizeSize(requestedSize) : "";
+      const selectedColor = store.getState().products.colorSelection.name;
+      const cartItems = store.getState().carts.cart?.items ?? [];
+      const sizeMatches = product
+        ? cartItems.filter(
+            (item) =>
+              item.id === product.id &&
+              normalizeSize(item.attributes[0] ?? "") === size
+          )
+        : [];
+      const matchingCartItem =
+        sizeMatches.find((item) => item.attributes[1] === selectedColor) ??
+        (sizeMatches.length === 1 ? sizeMatches[0] : undefined);
 
       if (action === "SET_CART_QUANTITY" && product) {
         const qty = Number(payload.quantity ?? 1);
-        const existing = store
-          .getState()
-          .carts.cart?.items.find(
-            (item) =>
-              item.id === product.id && compareArrays(item.attributes, attributes)
+        if (!matchingCartItem || !Number.isFinite(qty)) {
+          console.warn(
+            `[DuplexWidget] Cannot set quantity: no matching cart item for product ${productId} size "${requestedSize}"`
           );
-
-        if (!existing && qty > 0) {
-          dispatch(
-            addToCart({
-              id: product.id,
-              name: product.title,
-              srcUrl: product.srcUrl,
-              price: product.price,
-              attributes,
-              discount: product.discount,
-              quantity: qty,
-            })
-          );
-        } else {
-          dispatch(
-            setCartItemQuantity({
-              id: product.id,
-              attributes,
-              quantity: qty,
-            })
-          );
+          return;
         }
+
+        const inventory = getProductInventory(product.id);
+        const otherQuantity = cartItems
+          .filter(
+            (item) =>
+              item.id === product.id && item !== matchingCartItem
+          )
+          .reduce((total, item) => total + item.quantity, 0);
+        if (
+          !Number.isInteger(qty) ||
+          qty < 0 ||
+          qty + otherQuantity > (inventory?.stock ?? 0)
+        ) {
+          console.warn(
+            `[DuplexWidget] Cannot set quantity above available stock for product ${productId}`
+          );
+          return;
+        }
+
+        dispatch(
+          setCartItemQuantity({
+            id: product.id,
+            attributes: matchingCartItem.attributes,
+            quantity: qty,
+          })
+        );
         console.info(
           `[DuplexWidget] SET_CART_QUANTITY product ${productId} qty=${qty}`
         );
@@ -81,11 +129,18 @@ function DuplexProviders({ children }: Props) {
       }
 
       if (action === "REMOVE_FROM_CART" && product) {
+        if (!matchingCartItem) {
+          console.warn(
+            `[DuplexWidget] Cannot remove: no matching cart item for product ${productId} size "${requestedSize}"`
+          );
+          return;
+        }
+
         dispatch(
           remove({
             id: product.id,
-            attributes,
-            quantity: 0,
+            attributes: matchingCartItem.attributes,
+            quantity: matchingCartItem.quantity,
           })
         );
         console.info(`[DuplexWidget] REMOVE_FROM_CART product ${productId}`);
@@ -96,47 +151,73 @@ function DuplexProviders({ children }: Props) {
         return;
       }
 
-      const quantity = Number(payload.quantity ?? 1);
+      if (!product) {
+        console.warn(`[DuplexWidget] Cannot add unknown product ${productId}`);
+        return;
+      }
 
-      if (product) {
-        const existing = store
-          .getState()
-          .carts.cart?.items.find(
-            (item) =>
-              item.id === product.id && compareArrays(item.attributes, attributes)
-          );
-
-        if (existing) {
-          dispatch(
-            setCartItemQuantity({
-              id: product.id,
-              attributes,
-              quantity: existing.quantity + quantity,
-            })
-          );
-        } else {
-          dispatch(
-            addToCart({
-              id: product.id,
-              name: product.title,
-              srcUrl: product.srcUrl,
-              price: product.price,
-              attributes,
-              discount: product.discount,
-              quantity,
-            })
-          );
-        }
-        console.info(
-          `[DuplexWidget] ADD_TO_CART dispatched to Redux for product ${productId}`
+      if (!size) {
+        console.warn(
+          `[DuplexWidget] Cannot add product ${productId} without a valid size`
         );
         return;
       }
 
-      const selector = `[data-product-id="${productId}"] .add-to-cart-btn`;
-      document.querySelector<HTMLButtonElement>(selector)?.click();
-      console.warn(
-        `[DuplexWidget] ADD_TO_CART fallback DOM click for product ${productId}`
+      if (!isProductSizeAvailable(product.id, requestedSize)) {
+        console.warn(
+          `[DuplexWidget] Cannot add unavailable size "${requestedSize}" for product ${productId}`
+        );
+        return;
+      }
+
+      const quantity = Number(payload.quantity ?? 1);
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        console.warn(
+          `[DuplexWidget] Cannot add product ${productId} with invalid quantity`
+        );
+        return;
+      }
+
+      const inventory = getProductInventory(product.id);
+      const totalProductQuantity = cartItems
+        .filter((item) => item.id === product.id)
+        .reduce((total, item) => total + item.quantity, 0);
+      if (totalProductQuantity + quantity > (inventory?.stock ?? 0)) {
+        console.warn(
+          `[DuplexWidget] Cannot add more than available stock for product ${productId}`
+        );
+        return;
+      }
+
+      if (matchingCartItem) {
+        dispatch(
+          setCartItemQuantity({
+            id: product.id,
+            attributes: matchingCartItem.attributes,
+            quantity: matchingCartItem.quantity + quantity,
+          })
+        );
+      } else {
+        const attributes = [
+          displaySize(requestedSize),
+          selectedColor,
+        ];
+
+        dispatch(
+          addToCart({
+            id: product.id,
+            name: product.title,
+            srcUrl: product.srcUrl,
+            price: product.price,
+            attributes,
+            discount: product.discount,
+            quantity,
+          })
+        );
+      }
+
+      console.info(
+        `[DuplexWidget] ADD_TO_CART dispatched to Redux for product ${productId}`
       );
     },
     [dispatch, store]
@@ -145,6 +226,8 @@ function DuplexProviders({ children }: Props) {
   return (
     <DuplexWidgetProvider wsUrl={duplexWsUrl} onSystemAction={handleSystemAction}>
       <DuplexNavigationBridge />
+      <CartRecoveryPrompt />
+      <StoreSupportChat />
       {children}
     </DuplexWidgetProvider>
   );

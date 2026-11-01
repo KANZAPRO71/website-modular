@@ -57,6 +57,8 @@ interface CartsState {
   totalPrice: number;
   adjustedTotalPrice: number;
   action: "update" | "add" | "delete" | null;
+  lastUpdatedAt: number | null;
+  recoveryDismissedAt: number | null;
 }
 
 // Define the initial state using that type
@@ -65,6 +67,8 @@ const initialState: CartsState = {
   totalPrice: 0,
   adjustedTotalPrice: 0,
   action: null,
+  lastUpdatedAt: null,
+  recoveryDismissedAt: null,
 };
 
 export const cartsSlice = createSlice({
@@ -72,6 +76,13 @@ export const cartsSlice = createSlice({
   // `createSlice` will infer the state type from the `initialState` argument
   initialState,
   reducers: {
+    markCartUpdated: (state, action: PayloadAction<number | null>) => {
+      state.lastUpdatedAt = action.payload;
+      state.recoveryDismissedAt = null;
+    },
+    dismissCartRecovery: (state) => {
+      state.recoveryDismissedAt = state.lastUpdatedAt;
+    },
     addToCart: (state, action: PayloadAction<CartItem>) => {
       // if cart is empty then add
       if (state.cart === null) {
@@ -253,10 +264,26 @@ export const cartsSlice = createSlice({
           isItemInCart.quantity
         );
     },
+    clearCart: (state) => {
+      state.cart = null;
+      state.totalPrice = 0;
+      state.adjustedTotalPrice = 0;
+      state.action = null;
+      state.lastUpdatedAt = null;
+      state.recoveryDismissedAt = null;
+    },
   },
 });
 
-export const { addToCart, removeCartItem, remove, setCartItemQuantity } =
+export const {
+  addToCart,
+  removeCartItem,
+  remove,
+  setCartItemQuantity,
+  clearCart,
+  markCartUpdated,
+  dismissCartRecovery,
+} =
   cartsSlice.actions;
 
 export default cartsSlice.reducer;

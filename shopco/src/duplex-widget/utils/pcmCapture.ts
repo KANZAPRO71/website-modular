@@ -14,8 +14,21 @@ export function downsampleFloat32ToPcm16(
   const output = new Int16Array(outputLength);
 
   for (let index = 0; index < outputLength; index += 1) {
-    const sourceIndex = Math.floor(index * ratio);
-    output[index] = floatSampleToInt16(input[sourceIndex] ?? 0);
+    const sourceStart = index * ratio;
+    const sourceEnd = (index + 1) * ratio;
+    const firstSourceIndex = Math.floor(sourceStart);
+    const lastSourceIndex = Math.min(input.length, Math.ceil(sourceEnd));
+    let weightedSum = 0;
+    let totalWeight = 0;
+
+    for (let sourceIndex = firstSourceIndex; sourceIndex < lastSourceIndex; sourceIndex += 1) {
+      const overlap =
+        Math.min(sourceEnd, sourceIndex + 1) - Math.max(sourceStart, sourceIndex);
+      weightedSum += input[sourceIndex] * overlap;
+      totalWeight += overlap;
+    }
+
+    output[index] = floatSampleToInt16(totalWeight > 0 ? weightedSum / totalWeight : 0);
   }
 
   return output;

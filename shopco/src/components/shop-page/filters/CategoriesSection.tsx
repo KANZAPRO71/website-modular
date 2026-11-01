@@ -9,15 +9,15 @@ type Category = {
 
 const categoriesData: Category[] = [
   {
-    title: "Kaos",
+    title: "T-shirts",
     slug: "/shop?category=t-shirts",
   },
   {
-    title: "Celana pendek",
+    title: "Shorts",
     slug: "/shop?category=shorts",
   },
   {
-    title: "Kemeja",
+    title: "Shirts",
     slug: "/shop?category=shirts",
   },
   {

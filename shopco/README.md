@@ -36,6 +36,14 @@ Check out the live demo: [Shopco Demo](https://next-ecommerce-shopco.vercel.app/
 - **TypeScript**: Strongly typed code for better error detection and maintainability.
 - **Tailwind CSS**: Utility-first CSS framework for rapid UI development.
 - **Redux**: State management for managing the shopping cart and other global states.
+- **Product discovery**: Search the catalog, sort by rating or price, filter by price/rating/sale, and save products to a persistent wishlist.
+- **Currency**: Demo catalog prices are shown in US dollars (USD); the voice assistant uses the same prices.
+- **Inventory**: The storefront and assistant share the same static catalog stock snapshot. Out-of-stock products and unsupported sizes are blocked, but stock is not live or reserved and may not reflect real availability.
+- **Personalized discovery**: Product suggestions use recently viewed products and cart contents saved in this browser; product pages also suggest complementary catalog items to complete an outfit. These are local catalog-matching rules, not a cloud-trained AI recommendation service.
+- **Cart recovery**: If a saved cart remains unchanged for 30 minutes, the storefront shows a dismissible reminder in this browser. It does not send email, push notifications, or offers.
+- **Customer support chat**: A storefront-wide text/voice assistant answers catalog, sizing, styling, and demo checkout questions using the configured Gemini voice service. It cannot access real orders, process returns, or provide human support.
+- **Checkout and operations**: The order-preview flow is demo-only and stores product/total summaries in this browser. Shipping, payment processing, shared order management, and authenticated administration require a backend integration; no real payment or personal information is collected by this storefront.
+- **Automation boundaries**: The Gemini voice assistant can answer catalog questions and manage the local cart, but abandoned-cart emails, real restock notifications, order tracking/returns, and AI marketing copy workflows need backend data, customer consent, and appropriate messaging/admin services that are not configured in this demo.
 - **Framer Motion**: Smooth animations and transitions for an enhanced user experience.
 - **ShadCN UI**: Beautifully styled, accessible, and customizable UI components.
 - **Fully Responsive**: Mobile-first design ensuring the layout adapts across devices.

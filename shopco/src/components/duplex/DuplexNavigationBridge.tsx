@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { catalogProducts } from '@/data/catalog';
 import { getProductPath, highlightProductCard } from '@/lib/productPaths';
 import { useDuplexWidget } from '@/duplex-widget/components/duplex-widget/DuplexWidgetProvider';
+import { getProductInventory } from '@/data/inventory';
 
 export function DuplexNavigationBridge() {
   const router = useRouter();
@@ -29,10 +30,13 @@ export function DuplexNavigationBridge() {
         return;
       }
 
+      const inventory = getProductInventory(product.id);
       switchToProduct({
         productId: String(product.id),
         productName: product.title,
-        stockStatus: 'Tersedia',
+        stockStatus: inventory?.stock
+          ? `${inventory.stock} in stock`
+          : 'Out of stock',
       });
 
       const slug = detail.slug ?? getProductPath(product);

@@ -17,7 +17,7 @@ const ColorsSection = () => {
     <Accordion type="single" collapsible defaultValue="filter-colors">
       <AccordionItem value="filter-colors" className="border-none">
         <AccordionTrigger className="text-black font-bold text-xl hover:no-underline p-0 py-0.5">
-          Warna
+          Color
         </AccordionTrigger>
         <AccordionContent className="pt-4 pb-0">
           <div className="flex space-2.5 flex-wrap md:grid grid-cols-5 gap-2.5">

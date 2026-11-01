@@ -15,15 +15,15 @@ type TabBtn = {
 const tabBtnData: TabBtn[] = [
   {
     id: 1,
-    label: "Detail Produk",
+    label: "Product Details",
   },
   {
     id: 2,
-    label: "Rating & Ulasan",
+    label: "Rating & Reviews",
   },
   {
     id: 3,
-    label: "FAQ",
+    label: "FAQs",
   },
 ];
 

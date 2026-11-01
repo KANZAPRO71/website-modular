@@ -1,7 +1,7 @@
 import { Product } from "@/types/product.types";
 
 export function formatPrice(amount: number): string {
-  return `Rp ${Math.round(amount).toLocaleString("id-ID")}`;
+  return `$${amount}`;
 }
 
 export function getSalePrice(product: Pick<Product, "price" | "discount">): number {

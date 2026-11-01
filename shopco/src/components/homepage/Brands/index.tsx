@@ -1,5 +1,6 @@
 import Image from "next/image";
 import React from "react";
+import { publicAssetPath } from "@/lib/utils";
 
 const brandsData: { id: string; srcUrl: string }[] = [
   {
@@ -32,7 +33,7 @@ const Brands = () => {
           <Image
             key={brand.id}
             priority
-            src={brand.srcUrl}
+            src={publicAssetPath(brand.srcUrl)}
             height={0}
             width={0}
             alt={brand.id}

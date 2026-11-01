@@ -32,7 +32,7 @@ export function ProductMicButton({
   return (
     <button
       type="button"
-      aria-label={`Mulai suara untuk ${product.productName}`}
+      aria-label={`Start voice for ${product.productName}`}
       aria-pressed={isActive}
       onClick={(event) => {
         event.preventDefault();
@@ -48,7 +48,7 @@ export function ProductMicButton({
       </span>
       {showLabel ? (
         <span className="text-[11px] font-medium whitespace-nowrap">
-          {isActive ? 'Suara aktif' : 'Mulai suara'}
+          {isActive ? 'Voice active' : 'Start voice'}
         </span>
       ) : null}
     </button>

@@ -5,6 +5,7 @@ import Image from "next/image";
 import React, { useState } from "react";
 import { ProductImageGlow } from "@/duplex-widget/components/duplex-widget/ProductImageGlow";
 import { useDuplexWidget } from "@/duplex-widget/components/duplex-widget/DuplexWidgetProvider";
+import { publicAssetPath } from "@/lib/utils";
 
 const PhotoSection = ({ data }: { data: Product }) => {
   const [selected, setSelected] = useState<string>(data.srcUrl);
@@ -23,7 +24,7 @@ const PhotoSection = ({ data }: { data: Product }) => {
               onClick={() => setSelected(photo)}
             >
               <Image
-                src={photo}
+                src={publicAssetPath(photo)}
                 width={152}
                 height={167}
                 className="rounded-md w-full h-full object-cover hover:scale-110 transition-all duration-500"
@@ -40,7 +41,7 @@ const PhotoSection = ({ data }: { data: Product }) => {
         data-product-id={data.id}
       >
         <Image
-          src={selected}
+          src={publicAssetPath(selected)}
           width={444}
           height={530}
           className={`rounded-md w-full h-full object-cover transition-all duration-500 hover:scale-110 ${isHighlighted ? 'scale-105' : ''}`}

@@ -7,20 +7,20 @@ export type SpecItem = {
 
 const specsData: SpecItem[] = [
   {
-    label: "Komposisi bahan",
-    value: "100% Katun",
+    label: "Material composition",
+    value: "100% Cotton",
   },
   {
-    label: "Petunjuk perawatan",
-    value: "Cuci mesin suhu hangat, keringkan dengan mesin",
+    label: "Care instructions",
+    value: "Machine wash warm, tumble dry low",
   },
   {
-    label: "Tipe fit",
+    label: "Fit type",
     value: "Classic Fit",
   },
   {
-    label: "Motif",
-    value: "Polos",
+    label: "Pattern",
+    value: "Solid",
   },
 ];
 

@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn, publicAssetPath } from "@/lib/utils";
 import { integralCF } from "@/styles/fonts";
 import React from "react";
 import { PaymentBadge, SocialNetworks } from "./footer.types";
@@ -28,7 +28,7 @@ const socialsData: SocialNetworks[] = [
   {
     id: 4,
     icon: <FaGithub />,
-    url: "https://github.com/mohammadoftadeh",
+    url: "https://github.com",
   },
 ];
 
@@ -74,11 +74,11 @@ const Footer = () => {
                   "text-[28px] lg:text-[32px] mb-6",
                 ])}
               >
-                DEVI
+                SHOP.CO
               </h1>
               <p className="text-black/60 text-sm mb-9">
-                Butik fashion Jakarta — pakaian yang pas dengan gaya kamu, dari
-                casual sampai formal.
+                We have clothes that suits your style and which you&apos;re proud to
+                wear. From women to men.
               </p>
               <div className="flex items-center">
                 {socialsData.map((social) => (
@@ -103,7 +103,7 @@ const Footer = () => {
           <hr className="h-[1px] border-t-black/10 mb-6" />
           <div className="flex flex-col sm:flex-row justify-center sm:justify-between items-center mb-2">
             <p className="text-sm text-center sm:text-left text-black/60 mb-4 sm:mb-0 sm:mr-1">
-              DEVI © {new Date().getFullYear()} — Butik fashion Jakarta
+              Shop.co © 2000-{new Date().getFullYear()}, All Rights Reserved
             </p>
             <div className="flex items-center">
               {paymentBadgesData.map((badge, _, arr) => (
@@ -116,7 +116,7 @@ const Footer = () => {
                 >
                   <Image
                     priority
-                    src={badge.srcUrl}
+                    src={publicAssetPath(badge.srcUrl)}
                     width={33}
                     height={100}
                     alt="user"

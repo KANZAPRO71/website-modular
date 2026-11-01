@@ -5,18 +5,31 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks/redux";
 import { RootState } from "@/lib/store";
 import { Product } from "@/types/product.types";
 import React from "react";
+import {
+  getProductInventory,
+  isProductSizeAvailable,
+} from "@/data/inventory";
 
 const AddToCartBtn = ({ data }: { data: Product & { quantity: number } }) => {
   const dispatch = useAppDispatch();
   const { sizeSelection, colorSelection } = useAppSelector(
     (state: RootState) => state.products
   );
+  const cartItems = useAppSelector((state) => state.carts.cart?.items);
+  const inventory = getProductInventory(data.id);
+  const existingQuantity = (cartItems ?? [])
+    .filter((item) => item.id === data.id)
+    .reduce((total, item) => total + item.quantity, 0);
+  const isAvailable =
+    isProductSizeAvailable(data.id, sizeSelection) &&
+    data.quantity <= Math.max(0, (inventory?.stock ?? 0) - existingQuantity);
 
   return (
     <button
       type="button"
+      disabled={!isAvailable}
       data-product-id={data.id}
-      className="add-to-cart-btn bg-black w-full ml-3 sm:ml-5 rounded-full h-11 md:h-[52px] text-sm sm:text-base text-white hover:bg-black/80 transition-all"
+      className="add-to-cart-btn bg-black w-full ml-3 sm:ml-5 rounded-full h-11 md:h-[52px] text-sm sm:text-base text-white hover:bg-black/80 transition-all disabled:cursor-not-allowed disabled:bg-black/40"
       onClick={() =>
         dispatch(
           addToCart({
@@ -31,7 +44,11 @@ const AddToCartBtn = ({ data }: { data: Product & { quantity: number } }) => {
         )
       }
     >
-      Tambah ke Keranjang
+      {isAvailable
+        ? "Add to Cart"
+        : inventory?.stock === 0
+          ? "Out of Stock"
+          : "Stock limit reached"}
     </button>
   );
 };
