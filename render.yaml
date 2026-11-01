@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: shopco-gemini-orchestrator
+    runtime: docker
+    dockerfilePath: ./orchestrator/Dockerfile
+    dockerContext: ./orchestrator
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-live-preview
+      - key: GEMINI_VOICE
+        value: Aoede
+      - key: ORCHESTRATOR_ALLOWED_ORIGINS
+        value: https://kanzapro71.github.io
