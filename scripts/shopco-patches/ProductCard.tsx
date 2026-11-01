@@ -42,7 +42,7 @@ const ProductCard = ({ data }: ProductCardProps) => {
   const productContext = {
     productId,
     productName: data.title,
-    stockStatus: "Tersedia",
+    stockStatus: "In Stock",
   };
 
   const handleOpenAssistant = () => {
@@ -59,7 +59,7 @@ const ProductCard = ({ data }: ProductCardProps) => {
         <div className="relative w-full aspect-square overflow-hidden rounded-[13px] bg-[#F0EEED] lg:rounded-[20px]">
           <button
             type="button"
-            aria-label={`Buka asisten untuk ${data.title}`}
+            aria-label={`Open assistant for ${data.title}`}
             onClick={handleOpenAssistant}
             className="group absolute inset-0 z-0 cursor-pointer text-left"
           >
@@ -69,61 +69,56 @@ const ProductCard = ({ data }: ProductCardProps) => {
               height={298}
               className={`h-full w-full rounded-md object-contain transition-all duration-500 group-hover:scale-110 ${isHighlighted ? 'scale-105' : ''}`}
               alt={data.title}
-              loading="lazy"
+              priority
             />
-            <div className="pointer-events-none absolute inset-0 rounded-[13px] bg-black/0 transition group-hover:bg-black/5 lg:rounded-[20px]" />
           </button>
-
-          <ProductImageGlow active={isHighlighted} />
-
+          <ProductImageGlow active={isActive} />
           <ProductMicButton
             product={productContext}
             isActive={isActive}
             onActivate={handleStartVoice}
           />
         </div>
+        {isActive ? (
+          <ProductAssistantPanel
+            product={productContext}
+            messages={chatMessages}
+            connectionState={connectionState}
+            interactionMode={interactionMode}
+            isAudioMuted={isAudioMuted}
+            isListening={isListening}
+            isSpeaking={isSpeaking}
+            analyserNode={analyserNode}
+            onClose={closeWidget}
+            onModeChange={setInteractionMode}
+            onAudioMutedChange={setAudioMuted}
+            onSendText={sendTextMessage}
+            onToggleListening={toggleListening}
+            onInterrupt={interrupt}
+          />
+        ) : null}
       </div>
-
-      {isActive ? (
-        <ProductAssistantPanel
-          product={productContext}
-          messages={chatMessages}
-          connectionState={connectionState}
-          interactionMode={interactionMode}
-          isAudioMuted={isAudioMuted}
-          isListening={isListening}
-          isSpeaking={isSpeaking}
-          analyserNode={analyserNode}
-          onClose={closeWidget}
-          onModeChange={setInteractionMode}
-          onAudioMutedChange={setAudioMuted}
-          onSendText={sendTextMessage}
-          onToggleListening={toggleListening}
-          onInterrupt={interrupt}
-        />
-      ) : null}
-
       <Link
         href={`/shop/product/${data.id}/${data.title.split(" ").join("-")}`}
-        className="flex flex-col items-start w-full mt-2.5 xl:mt-4"
+        className="font-bold text-base md:text-xl capitalize pt-2.5 md:pt-4"
       >
-        <strong className="text-black xl:text-xl">{data.title}</strong>
-        <div className="flex items-end mb-1 xl:mb-2">
-          <Rating
-            initialValue={data.rating}
-            allowFraction
-            SVGclassName="inline-block"
-            emptyClassName="fill-gray-50"
-            size={19}
-            readonly
-          />
-          <span className="text-black text-xs xl:text-sm ml-[11px] xl:ml-[13px] pb-0.5 xl:pb-0">
-            {data.rating.toFixed(1)}
-            <span className="text-black/60">/5</span>
-          </span>
-        </div>
-        <ProductPrice product={data} />
+        {data.title}
       </Link>
+      <div className="flex items-center space-x-[11px] mb-1 md:mb-1.5">
+        <Rating
+          initialValue={data.rating}
+          allowFraction
+          SVGclassName="inline-block"
+          emptyClassName="fill-gray-50"
+          size={19}
+          readonly
+        />
+        <span className="text-black text-xs md:text-sm">
+          {data.rating.toFixed(1)}
+          <span className="text-black/60">/5</span>
+        </span>
+      </div>
+      <ProductPrice product={data} />
     </div>
   );
 };

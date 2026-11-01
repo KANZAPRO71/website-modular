@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Provider } from "react-redux";
 import { makeStore } from "../lib/store";
 import { PersistGate } from "redux-persist/integration/react";
@@ -28,8 +28,35 @@ type Props = {
   children: React.ReactNode;
 };
 
-const duplexWsUrl =
-  process.env.NEXT_PUBLIC_DUPLEX_WS_URL ?? "ws://localhost:8787";
+const DEFAULT_CLOUD_WSS = "wss://cycles-hunter-pull-romance.trycloudflare.com";
+
+function getDynamicDuplexWsUrl(): string {
+  if (typeof window !== "undefined") {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const queryWs = params.get("ws");
+      if (queryWs) {
+        localStorage.setItem("shopco_duplex_ws_url", queryWs);
+        return queryWs;
+      }
+    } catch {}
+
+    try {
+      const saved = localStorage.getItem("shopco_duplex_ws_url");
+      if (saved) return saved;
+    } catch {}
+
+    if (window.location.protocol === "https:") {
+      const envUrl = process.env.NEXT_PUBLIC_DUPLEX_WS_URL;
+      if (envUrl && envUrl.startsWith("wss://")) {
+        return envUrl;
+      }
+      return DEFAULT_CLOUD_WSS;
+    }
+  }
+
+  return process.env.NEXT_PUBLIC_DUPLEX_WS_URL || "ws://localhost:8787";
+}
 
 function normalizeSize(size: string): string {
   const normalized = size.trim().toLocaleLowerCase();
@@ -58,6 +85,11 @@ function displaySize(size: string): string {
 }
 
 function DuplexProviders({ children }: Props) {
+  const [wsUrl, setWsUrl] = useState<string>(getDynamicDuplexWsUrl);
+
+  useEffect(() => {
+    setWsUrl(getDynamicDuplexWsUrl());
+  }, []);
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
@@ -224,7 +256,7 @@ function DuplexProviders({ children }: Props) {
   );
 
   return (
-    <DuplexWidgetProvider wsUrl={duplexWsUrl} onSystemAction={handleSystemAction}>
+    <DuplexWidgetProvider wsUrl={wsUrl} onSystemAction={handleSystemAction}>
       <DuplexNavigationBridge />
       <CartRecoveryPrompt />
       <StoreSupportChat />

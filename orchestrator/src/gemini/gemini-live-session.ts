@@ -21,21 +21,21 @@ const INPUT_SAMPLE_RATE = 16_000;
 const OUTPUT_SAMPLE_RATE = 24_000;
 
 const CART_CONFIRM_RE =
-  /\b(iya|ya|yup|ok|oke|boleh|sip|gas|gaskeun|masukin|keranjang|beli|deal|setuju|lanjut|checkout|ambil|taruh|simpan)\b/i;
+  /\b(yes|yeah|yup|ok|okay|sure|go|add|cart|buy|deal|agree|continue|checkout|take|place|save)\b/i;
 
 const CART_ADJUST_RE =
-  /\b(hapus|kurangi|kurangin|buang|batal|cancel|satu aja|cuma satu|kok ada dua|jangan dua|berlebihan|over|remove|delete|update|ganti jadi)\b/i;
+  /\b(remove|decrease|reduce|delete|cancel|one|single|duplicate|over|update|replace)\b/i;
 
 const addToCartTool: FunctionDeclaration = {
   name: 'add_to_cart',
   description:
-    'Menambahkan produk ke keranjang. WAJIB: (1) pelanggan sudah sebut ukuran, (2) kamu sudah tanya konfirmasi verbal, (3) pelanggan jawab iya/boleh/oke/masukin. Jangan panggil jika pelanggan cuma sebut ukuran tanpa setuju beli.',
+    'Adds a product to the cart. REQUIRED: (1) customer has stated their size, (2) you asked for verbal confirmation, (3) customer confirmed with yes/ok/sure. Do NOT call if customer only mentioned a size without agreeing to buy.',
   parameters: {
     type: Type.OBJECT,
     properties: {
-      productId: { type: Type.STRING, description: 'ID produk butik' },
-      size: { type: Type.STRING, description: 'Ukuran pakaian, misal S/M/L/XL' },
-      quantity: { type: Type.NUMBER, description: 'Jumlah item' },
+      productId: { type: Type.STRING, description: 'Product ID from the catalog' },
+      size: { type: Type.STRING, description: 'Clothing size, e.g. S/M/L/XL' },
+      quantity: { type: Type.NUMBER, description: 'Number of items' },
     },
     required: ['productId', 'size'],
   },
@@ -44,13 +44,13 @@ const addToCartTool: FunctionDeclaration = {
 const setCartQuantityTool: FunctionDeclaration = {
   name: 'set_cart_quantity',
   description:
-    'Mengatur jumlah exact item di keranjang (misal jadi 1 saja). Pakai saat pelanggan minta kurangi, "satu aja", "kok ada dua", atau perbaiki duplikat. Jangan dipakai untuk menambah item baru — pakai add_to_cart.',
+    'Sets the exact quantity of a cart item (e.g. change to 1). Use when customer asks to reduce, says just one, why are there two, or to fix duplicates. Do NOT use to add new items — use add_to_cart instead.',
   parameters: {
     type: Type.OBJECT,
     properties: {
-      productId: { type: Type.STRING, description: 'ID produk butik' },
-      size: { type: Type.STRING, description: 'Ukuran item di keranjang' },
-      quantity: { type: Type.NUMBER, description: 'Jumlah final yang diinginkan (0 = hapus)' },
+      productId: { type: Type.STRING, description: 'Product ID from the catalog' },
+      size: { type: Type.STRING, description: 'Size of the item in cart' },
+      quantity: { type: Type.NUMBER, description: 'Final quantity desired (0 = remove from cart)' },
     },
     required: ['productId', 'size', 'quantity'],
   },
@@ -59,12 +59,12 @@ const setCartQuantityTool: FunctionDeclaration = {
 const removeFromCartTool: FunctionDeclaration = {
   name: 'remove_from_cart',
   description:
-    'Menghapus produk sepenuhnya dari keranjang. Pakai saat pelanggan minta hapus/buang/batal item tersebut.',
+    'Completely removes a product from the cart. Use when customer asks to remove or cancel an item.',
   parameters: {
     type: Type.OBJECT,
     properties: {
-      productId: { type: Type.STRING, description: 'ID produk butik' },
-      size: { type: Type.STRING, description: 'Ukuran item di keranjang' },
+      productId: { type: Type.STRING, description: 'Product ID from the catalog' },
+      size: { type: Type.STRING, description: 'Size of the item in cart' },
     },
     required: ['productId', 'size'],
   },
@@ -73,21 +73,21 @@ const removeFromCartTool: FunctionDeclaration = {
 const navigateToProductTool: FunctionDeclaration = {
   name: 'navigate_to_product',
   description:
-    'Menampilkan gambar produk di layar pelanggan dengan mengalihkan fokus UI ke produk tersebut. WAJIB dipanggil jika pelanggan minta lihat gambar, tunjukkan produk, pindah ke item lain, atau sebut nama produk yang ingin dilihat.',
+    'Displays a product on the customer screen by shifting UI focus. MUST be called when customer asks to see a photo, show a product, switch items, or mentions a product name they want to view.',
   parameters: {
     type: Type.OBJECT,
     properties: {
       productId: {
         type: Type.STRING,
-        description: 'ID produk dari katalog (contoh: "6" untuk hoodie/graphic tee)',
+        description: 'Product ID from catalog (e.g. "6" for hoodie/graphic tee)',
       },
       productName: {
         type: Type.STRING,
-        description: 'Nama produk untuk konfirmasi verbal ke pelanggan',
+        description: 'Product name for verbal confirmation to customer',
       },
       view: {
         type: Type.STRING,
-        description: 'catalog = scroll ke kartu di etalase, detail = buka halaman detail produk',
+        description: 'catalog = scroll to card in grid, detail = open product detail page',
       },
     },
     required: ['productId'],
@@ -149,138 +149,88 @@ function userRequestedCartAdjust(text: string): boolean {
   return CART_ADJUST_RE.test(text.trim());
 }
 
-function buildFewShotExamples(): string[] {
-  return [
-    '**Contoh dialog konsultatif (ikuti nada ini):**',
-    'Pelanggan klik kaos tape → "Halo kak, lagi lihat kaos tape ya? Bahan katun combed-nya adem — mau tanya ukuran atau warna?"',
-    'Pelanggan: "XL ada?" → "Ada kak, M L XL ready. Katun combed, jahitan rapi, cocok daily."',
-    'Pelanggan: "Ada warna apa?" → "Off-white dengan detail tape di bahu — satu varian aja kak."',
-    'Pelanggan: "Bahannya panas gak?" → "Enggak kak, katun combed breathable, adem dipakai siang hari."',
-    'Pelanggan: "Oke ambil XL deh" → "Siap, mau saya simpanin di keranjang size XL?" → pelanggan: "Iya" → [add_to_cart]',
-    'Pelanggan: "Kok ada dua?" / "Satu aja" → [set_cart_quantity quantity=1] → "Oke kak, sudah saya jadiin satu aja di keranjang."',
-    'Pelanggan: "Hapus aja deh" → [remove_from_cart] → "Siap, sudah saya keluarin dari keranjang."',
-    'Pelanggan: "Tunjukin kemeja flanel" → [navigate_to_product, diam]',
-    '',
-    '**SALAH (jangan):**',
-    '- Ulang "welcome di Butik DEVI" di setiap jawaban',
-    '- Setiap giliran tanya "masukin keranjang?" / "mau diproses?" / "langsung masukin?"',
-    '- Jawab pertanyaan bahan/warna tapi diakhiri push beli',
-    '- Sebut "butik mimin" — pakai "Butik DEVI"',
-  ];
-}
-
 function buildUiInterfacePrompt(context: ProductContext): string {
-  const page = context.pageLabel ?? 'Halaman toko online';
+  const page = context.pageLabel ?? 'Shop page';
   const path = context.pagePath ?? '/';
 
   return [
-    '**PETA INTERFACE BUTIK DEVI (baca & pahami layar pelanggan)**',
-    'Nama toko resmi: **Butik DEVI** (logo "DEVI" di navbar). JANGAN sebut "butik mimin", "Shop.co", atau nama lain.',
+    '**SHOP.CO INTERFACE MAP**',
+    'Store name: SHOP.CO. Always refer to it as SHOP.CO.',
     '',
-    '**Elemen global (semua halaman):**',
-    '- Navbar: logo DEVI | menu Toko, Diskon, Koleksi Baru, Brand | cari produk | ikon keranjang | akun',
-    '- Banner atas: promo daftar diskon 20%',
-    '- Tombol **Mulai suara** di foto produk = pelanggan bicara langsung dengan kamu (Rina)',
-    '- **Glow biru** di foto = produk sedang difokuskan/ditampilkan setelah navigate',
-    '- Harga selalu format **Rupiah** (contoh: Rp 145.000)',
+    '**Global elements (all pages):**',
+    '- Navbar: SHOP.CO logo | Shop, On Sale, New Arrivals, Brands | search | cart | account',
+    '- Top banner: 20% off sign-up promo',
+    '- Start Voice button on product card = customer speaking directly to you',
+    '- Blue glow on photo = product highlighted after navigate',
+    '- Prices in USD ($)',
     '',
-    '**Beranda (/):** hero "Temukan gaya yang pas untuk kamu", Koleksi Terbaru, Terlaris, gaya busana (Kasual/Formal/Pesta/Olahraga), ulasan pelanggan',
-    '**Toko (/shop):** katalog grid, filter ukuran/warna/harga/gaya, urutkan harga',
-    '**Detail produk (/shop/product/...):** foto besar, rating, harga Rp, Pilih Ukuran, Pilih Warna, Tambah ke Keranjang, tab Detail/Ulasan/FAQ',
-    '**Keranjang (/cart):** daftar item, Ringkasan Pesanan, subtotal, diskon, ongkir gratis, Lanjut Checkout',
+    '**Home (/):** hero, New Arrivals, Top Selling, Browse by Style (Casual/Formal/Party/Gym), reviews',
+    '**Shop (/shop):** grid catalog, filters for size/color/price/style, sort by price',
+    '**Product (/shop/product/...):** large photo, rating, price, Choose Size, Choose Color, Add to Cart, tabs Details/Reviews/FAQ',
+    '**Cart (/cart):** item list, Order Summary, subtotal, discount, free shipping, Go to Checkout',
+    '**Checkout (/checkout):** demo-only order preview; no payment or shipping is arranged.',
+    '**Order confirmation (/order-confirmation):** browser-local demo summary only; no shared order record.',
+    '**Wishlist (/wishlist):** products saved in this browser.',
     '',
-    '**Halaman aktif pelanggan sekarang:**',
-    `- ${page} (${path})`,
-    context.storeName ? `- Toko: ${context.storeName}` : '- Toko: Butik DEVI',
+    `**Customer current page: ${page} (${path})**`,
+    context.storeName ? `Store: ${context.storeName}` : 'Store: SHOP.CO',
   ].join('\n');
 }
-
-function buildOpeningPrompt(context: ProductContext): string {
-  const stock = lookupInventory(context.productId);
-  const label = spokenProductLabel(context);
-
-  return [
-    `[Pembukaan sesi] Pelanggan menekan Start Voice di gambar "${label}" — mereka sudah tertarik produk ini.`,
-    'Sapa sebagai Rina dari Butik DEVI: hangat, informatif, TEPAT 1-2 kalimat pendek. Sekali saja sebut Butik DEVI — jangan diulang tiap turn.',
-    `Contoh: "Halo kak, lagi lihat ${label} ya? Kalau mau tanya bahan, ukuran, atau warna, tanya aja." — JANGAN langsung push keranjang di sapaan.`,
-    stock.stock > 0
-      ? `[Info internal saja, jangan dibaca ke pelanggan] Stok ${stock.stock}, ukuran ${stock.sizes.join(', ')}.`
-      : 'Stok habis — bilang jujur singkat, tawarkan alternatif serupa jika cocok.',
-  ].join(' ');
-}
-
 function buildSystemInstruction(context: ProductContext): string {
-  const stock = lookupInventory(context.productId);
   const label = spokenProductLabel(context);
 
   return [
     '**PERSONA**',
-    'Kamu Rina, pemilik **Butik DEVI** — butik fashion di Jakarta. Kamu langsung melayani pelanggan di etalase — bukan chatbot, bukan CS call center.',
-    'Karakter: konsultatif seperti penjaga butik yang jago bahan & fit — bukan sales agresif. Sapaan: "kak".',
-    'NAMA TOKO: selalu **Butik DEVI** atau **DEVI**. JANGAN PERNAH sebut toko sebagai "butik mimin", "toko mimin", atau "Shop.co".',
-    'Untuk diri sendiri pakai "saya" (boleh gaya "mimin" hanya sebagai kata ganti diri, BUKAN nama toko). JANGAN pakai "gue".',
+    'You are the expert fashion consultant for **SHOP.CO**. You directly assist shoppers right on the storefront — not an automated robot or phone support.',
+    'Character: consultative, knowledgeable about fabrics & fit, warm, concise, and never pushy.',
+    'Wait silently when a session starts or resumes. Do not greet, narrate, or speak until the customer sends a clear message.',
     '',
-    '**BAHASA**',
-    'RESPOND UNMISTAKABLY IN INDONESIAN. Kamu WAJIB menjawab dalam Bahasa Indonesia sehari-hari.',
-    'TEPAT maksimal 2 kalimat pendek per giliran. Stop setelah 2 kalimat — jangan monolog panjang.',
-    'Jangan formal: hindari "Silakan", "Apakah ada yang bisa saya bantu". Pakai: "Oke kak", "Boleh", "Siap".',
-    'Sebut produk pakai nama natural (spokenName di katalog), jangan baca judul Inggris. Sebut harga dalam Rupiah (Rp).',
-    'Kamu paham layout website Butik DEVI — jawab pertanyaan tentang menu, keranjang, filter, ukuran di layar, dll.',
+    '**LANGUAGE**',
+    'Always respond in clear, natural English, even when the customer speaks another language.',
+    'Strictly maximum 1-2 short sentences per turn. Stop after 2 sentences — never monologue.',
+    'Quote product names naturally and mention prices clearly.',
+    'You understand the SHOP.CO website layout — assist with navigation, cart, filters, sizes, etc.',
+    context.productId
+      ? `Current product context: ${label}.`
+      : 'No product is currently selected. Ask which item the customer means before giving product-specific details.',
     '',
-    '**GAYA KONSULTASI (WAJIB — bukan hard sell)**',
-    'Prioritas #1: jawab pertanyaan pelanggan dengan info berguna — bahan, warna, ukuran, harga, fit, perawatan, cocok untuk apa.',
-    'Bantu pelanggan YAKIN sebelum beli. Sebut detail bahan secara natural ("katun combed adem", "denim stretch nyaman gerak").',
-    'JANGAN push keranjang di setiap giliran. DILARANG mengulang: "masukin keranjang?", "mau diproses?", "langsung masukin?", "gimana mau saya masukin?".',
-    'Tawarkan simpan ke keranjang MAKSIMAL sekali per sesi — HANYA setelah pelanggan sendiri bilang mau beli/ambil/order/deal.',
-    'Kalau pelanggan masih eksplorasi (tanya ukuran, warna, bahan), cukup jawab info — tanpa CTA beli.',
-    'Pelanggan bisa minta KURANGI/HAPUS dari keranjang — gunakan set_cart_quantity atau remove_from_cart, lalu konfirmasi singkat.',
-    'Kalau pelanggan bilang "kok ada dua" / "satu aja": panggil set_cart_quantity quantity=1 — jangan add_to_cart lagi.',
-    'Abaikan transkrip noise (bahasa asing/Hindi/Spanish gibberish) — fokus intent Indonesia. Jika tidak jelas, minta ulang singkat.',
-    'JANGAN ulang seluruh riwayat chat di setiap jawaban — hanya respons untuk pertanyaan terakhir.',
+    '**CONSULTATIVE STYLE (MANDATORY)**',
+    'Priority #1: answer customer questions with useful info — fabric, color, size, price, fit, care instructions.',
+    'For recommendations or comparisons, use only the catalog facts below; compare relevant price, material, fit, colors, sizes, and stock, and never invent product details.',
+    'Help the customer feel confident before buying.',
+    'DO NOT push add-to-cart on every turn. Only offer to save to cart when the customer explicitly expresses intent to buy.',
+    'If the customer asks to reduce/remove items from cart, use set_cart_quantity or remove_from_cart.',
+    'Understand the customer’s intent even when they speak another language, but keep every spoken and written response in English.',
+    'The storefront demo has no fulfillment, order tracking, returns, customer notification, or live restock system. Never claim to check an order, process a return, reserve inventory, or send an alert; clearly explain this limitation when asked.',
+    'Do not promise shipping, payment processing, refunds, discounts, or customer-support follow-up. For checkout questions, explain that the order preview is saved only in the current browser and does not place a real order.',
+    'Never repeat the entire conversation history in every answer — answer only the current question.',
     '',
-    '**ATURAN SUARA**',
-    'JANGAN ulang sapaan pembuka atau kumulatif menambah kalimat lama — setiap respons fresh, hanya jawab yang ditanya sekarang.',
-    'Pelanggan klik Start Voice = sudah tertarik produk itu. Jangan tanya "lagi cari apa".',
-    'Setelah navigate_to_product: layar otomatis tampilkan gambar — JANGAN ucapkan navigasi. Diam atau jawab singkat hanya jika ditanya.',
-    'Sebut ukuran/warna/harga hanya jika relevan dengan pertanyaan pelanggan.',
+    '**VOICE RULES**',
+    'Do not repeat greetings on subsequent turns. Every response is fresh and directly answers what was asked.',
+    'After navigate_to_product: screen automatically updates — remain silent unless asked.',
     '',
-    '**ALUR PERCAKAPAN**',
-    '1. Sapa singkat → akui produk → undang tanya (bahan/ukuran/warna) — bukan push beli.',
-    '2. Loop konsultasi: jawab info produk, pairing 1x jika natural, navigate jika minta lihat produk lain.',
-    '3. Beli: hanya jika pelanggan eksplisit mau ambil/beli → konfirmasi sekali ("Mau saya simpanin di keranjang?") → tunggu iya/boleh → add_to_cart.',
+    '**TOOLS (internal)**',
+    'navigate_to_product: view=catalog or view=detail.',
+    'add_to_cart: only when item and size are clear and customer verbally confirmed.',
+    'set_cart_quantity: adjust exact quantity in cart.',
+    'remove_from_cart: remove item completely.',
     '',
-    ...buildFewShotExamples(),
-    '',
-    '**GUARDRAILS**',
-    'Jika pelanggan minta ukuran yang tidak ada di produk aktif, cek katalog — navigate ke produk lain yang punya ukuran itu (view=catalog). Jangan asal navigate.',
-    'Jangan navigate ke produk acak. Tidak ada rok di toko.',
-    'Jangan panggil add_to_cart sebelum pelanggan konfirmasi eksplisit (iya/boleh/oke/masukin/beli).',
-    'Jangan bilang tidak bisa menampilkan gambar — selalu pakai navigate_to_product.',
-    '',
-    buildUiInterfacePrompt(context),
-    '',
-    '**KONTEKS PRODUK AKTIF**',
-    `- productId: ${context.productId ?? 'unknown'}`,
-    `- nama natural: ${label}`,
-    `- stok: ${stock.stock}`,
-    `- ukuran tersedia: ${stock.sizes.join(', ')}`,
-    stock.price ? `- harga: Rp ${stock.price.toLocaleString('id-ID')}` : '',
-    ...buildProductDetailLines(context.productId),
-    '',
-    '**TOOLS (internal — jangan sebut ke pelanggan)**',
-    'navigate_to_product: minta lihat/tunjukkan produk lain. view=catalog (default), view=detail jika minta halaman detail.',
-    'Mapping: celana pendek=7, celana panjang/jeans=2|8, kemeja=3|5, kaos/hoodie=6.',
-    'add_to_cart: hanya setelah ukuran jelas + konfirmasi verbal pelanggan.',
-    'set_cart_quantity: atur jumlah exact (perbaiki duplikat, "satu aja", kurangi). quantity=0 hapus item.',
-    'remove_from_cart: hapus item sepenuhnya dari keranjang.',
-    '',
-    '**Katalog:**',
+    '**CATALOG:**',
     ...buildCatalogPromptLines(),
   ].join('\n');
 }
 
+
 export class GeminiLiveSession {
   private session: Session | null = null;
+  private ai: GoogleGenAI | null = null;
+  private context: ProductContext = {};
+  private callbacks: GeminiLiveCallbacks | null = null;
+  private resumeHandle: string | undefined;
+  private connectionGeneration = 0;
+  private reconnecting = false;
+  private closed = false;
+  private pendingInputs: Array<{ type: 'audio' | 'text'; data: string }> = [];
   private forwardAudio = true;
   private userTranscript = '';
   private modelTranscript = '';
@@ -309,13 +259,35 @@ export class GeminiLiveSession {
       throw new Error('GEMINI_API_KEY is missing');
     }
 
-    const ai = new GoogleGenAI({ apiKey: this.apiKey });
+    this.ai = new GoogleGenAI({ apiKey: this.apiKey });
+    this.context = context;
+    this.callbacks = callbacks;
+    this.closed = false;
+    this.forwardAudio = true;
+    this.userTranscript = '';
+    this.modelTranscript = '';
+    this.lastSentTranscript = { user: '', model: '' };
+    this.lastFinalUserText = '';
+    this.committedUserTranscript = '';
+    this.committedModelTranscript = '';
 
-    this.session = await ai.live.connect({
+    await this.openSession();
+  }
+
+  private async openSession(): Promise<void> {
+    const ai = this.ai;
+    const callbacks = this.callbacks;
+    if (!ai || !callbacks || this.closed) {
+      return;
+    }
+
+    const generation = ++this.connectionGeneration;
+    const resumed = Boolean(this.resumeHandle);
+    const session = await ai.live.connect({
       model: this.model,
       config: {
         responseModalities: [Modality.AUDIO],
-        systemInstruction: buildSystemInstruction(context),
+        systemInstruction: buildSystemInstruction(this.context),
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: { voiceName: this.voice },
@@ -331,40 +303,104 @@ export class GeminiLiveSession {
             ],
           },
         ],
+        sessionResumption: { handle: this.resumeHandle },
         inputAudioTranscription: {},
         outputAudioTranscription: {},
       },
       callbacks: {
-        onmessage: (message) => this.handleMessage(message, callbacks),
+        onmessage: (message) => {
+          if (generation === this.connectionGeneration) {
+            this.handleMessage(message, callbacks);
+          }
+        },
         onerror: (event) => {
-          callbacks.onError?.(new Error(event.message ?? 'Gemini Live error'));
+          if (generation === this.connectionGeneration) {
+            this.beginReconnect(event.message ?? 'Gemini Live error');
+          }
+        },
+        onclose: () => {
+          if (generation === this.connectionGeneration) {
+            this.beginReconnect('Gemini Live connection closed');
+          }
         },
       },
     });
 
-    this.forwardAudio = true;
-    this.userTranscript = '';
-    this.modelTranscript = '';
-    this.lastSentTranscript = { user: '', model: '' };
-    this.lastFinalUserText = '';
+    if (this.closed || generation !== this.connectionGeneration) {
+      session.close();
+      return;
+    }
 
-    this.session.sendClientContent({
-      turns: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: buildOpeningPrompt(context),
-            },
-          ],
-        },
-      ],
-      turnComplete: true,
-    });
+    this.session = session;
+
+    this.flushPendingInputs();
+  }
+
+  private beginReconnect(reason: string): void {
+    if (this.closed || this.reconnecting || !this.ai) {
+      return;
+    }
+
+    console.warn(`[GeminiLive] reconnecting: ${reason}`);
+    this.reconnecting = true;
+    this.connectionGeneration += 1;
+    const previousSession = this.session;
+    this.session = null;
+    previousSession?.close();
+    void this.reconnect();
+  }
+
+  private async reconnect(): Promise<void> {
+    const delays = [250, 500, 1_000, 2_000, 4_000];
+
+    for (const delay of delays) {
+      if (this.closed) {
+        this.reconnecting = false;
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      try {
+        await this.openSession();
+        if (this.session) {
+          this.reconnecting = false;
+          return;
+        }
+      } catch (error) {
+        console.warn('[GeminiLive] reconnect attempt failed:', error);
+      }
+    }
+
+    this.reconnecting = false;
+    this.pendingInputs = [];
+    this.callbacks?.onError?.(new Error('Gemini Live could not reconnect after five attempts'));
+  }
+
+  private queueInput(type: 'audio' | 'text', data: string): void {
+    const maxPendingInputs = 180;
+    if (this.pendingInputs.length >= maxPendingInputs) {
+      this.pendingInputs.shift();
+    }
+    this.pendingInputs.push({ type, data });
+  }
+
+  private flushPendingInputs(): void {
+    const pending = this.pendingInputs.splice(0);
+    for (const input of pending) {
+      if (input.type === 'audio') {
+        this.sendPcm16(input.data);
+      } else {
+        this.sendText(input.data);
+      }
+    }
   }
 
   sendPcm16(base64Pcm: string): void {
     if (!this.session) {
+      if (this.reconnecting) {
+        this.queueInput('audio', base64Pcm);
+      }
       return;
     }
 
@@ -379,7 +415,14 @@ export class GeminiLiveSession {
   }
 
   sendText(text: string): void {
-    if (!this.session || !text.trim()) {
+    if (!text.trim()) {
+      return;
+    }
+
+    if (!this.session) {
+      if (this.reconnecting) {
+        this.queueInput('text', text.trim());
+      }
       return;
     }
 
@@ -412,7 +455,7 @@ export class GeminiLiveSession {
 
     const inv = lookupInventory(context.productId);
     const page = context.pageLabel ?? 'halaman toko';
-    const prompt = `[Navigasi UI Butik DEVI] Pelanggan sekarang di ${page}, melihat produk "${context.productName ?? inv.name}" (ID: ${context.productId ?? 'unknown'}${inv.price ? `, ${inv.price.toLocaleString('id-ID')} rupiah` : ''}). Gambar sudah tampil — glow biru aktif. Jangan ucapkan pengakuan navigasi. Tunggu pertanyaan pelanggan.`;
+    const prompt = `[SHOP.CO storefront navigation] The customer is now on ${page}, viewing "${context.productName ?? inv.name}" (ID: ${context.productId ?? 'unknown'}${inv.price ? `, $${inv.price.toLocaleString('en-US')}` : ''}). The product image is visible and highlighted. Do not acknowledge the navigation; wait for the customer's question.`;
 
     this.session.sendClientContent({
       turns: [
@@ -426,8 +469,15 @@ export class GeminiLiveSession {
   }
 
   close(): void {
+    this.closed = true;
+    this.reconnecting = false;
+    this.connectionGeneration += 1;
     this.session?.close();
     this.session = null;
+    this.ai = null;
+    this.callbacks = null;
+    this.resumeHandle = undefined;
+    this.pendingInputs = [];
     this.userTranscript = '';
     this.modelTranscript = '';
     this.lastSentTranscript = { user: '', model: '' };
@@ -527,6 +577,15 @@ export class GeminiLiveSession {
   }
 
   private handleMessage(message: LiveServerMessage, callbacks: GeminiLiveCallbacks): void {
+    if (message.sessionResumptionUpdate) {
+      const update = message.sessionResumptionUpdate;
+      this.resumeHandle = update.resumable ? update.newHandle : undefined;
+    }
+
+    if (message.goAway) {
+      this.beginReconnect('Gemini Live announced an impending disconnect');
+    }
+
     const content = message.serverContent;
 
     if (content?.interrupted) {
@@ -590,6 +649,27 @@ export class GeminiLiveSession {
         const productId = String(args.productId ?? '');
         const size = String(args.size ?? 'M');
         const quantity = Number(args.quantity ?? 1);
+        const inventory = lookupInventory(productId);
+        const normalizedSize = size.trim().toUpperCase();
+        const availableSizes = inventory.sizes.map((entry) => entry.toUpperCase());
+
+        if (
+          inventory.stock <= 0 ||
+          !availableSizes.includes(normalizedSize) ||
+          !Number.isInteger(quantity) ||
+          quantity <= 0 ||
+          quantity > inventory.stock
+        ) {
+          return {
+            id: call.id,
+            name: call.name,
+            response: {
+              result: 'blocked',
+              reason:
+                'This product, size, or quantity is not available in the catalog inventory. Explain the limitation and suggest an available alternative.',
+            },
+          };
+        }
 
         if (!userConfirmedPurchase(this.lastFinalUserText)) {
           console.log(
@@ -602,7 +682,7 @@ export class GeminiLiveSession {
             response: {
               result: 'blocked',
               reason:
-                'Pelanggan belum konfirmasi eksplisit. Tanya dulu sekali, tunggu iya/boleh/oke — jangan ulang push.',
+                'The customer has not explicitly confirmed. Ask once and wait for confirmation; do not pressure the customer.',
             },
           };
         }
@@ -620,7 +700,7 @@ export class GeminiLiveSession {
           name: call.name,
           response: {
             result: 'ok',
-            message: 'Produk ditambahkan. Konfirmasi singkat tanpa push lagi.',
+            message: 'Product added. Confirm briefly without making another sales pitch.',
           },
         };
       }
@@ -636,7 +716,7 @@ export class GeminiLiveSession {
             name: call.name,
             response: {
               result: 'blocked',
-              reason: 'Tunggu pelanggan minta ubah jumlah keranjang (kurangi/hapus/satu aja).',
+              reason: 'Wait until the customer asks to change the cart quantity.',
             },
           };
         }
@@ -656,7 +736,7 @@ export class GeminiLiveSession {
           name: call.name,
           response: {
             result: 'ok',
-            message: `Jumlah di keranjang diatur jadi ${quantity}. Konfirmasi singkat ke pelanggan.`,
+            message: `Cart quantity set to ${quantity}. Confirm the change briefly.`,
           },
         };
       }
@@ -671,7 +751,7 @@ export class GeminiLiveSession {
             name: call.name,
             response: {
               result: 'blocked',
-              reason: 'Tunggu pelanggan minta hapus item dari keranjang.',
+              reason: 'Wait until the customer asks to remove an item from the cart.',
             },
           };
         }
@@ -688,7 +768,7 @@ export class GeminiLiveSession {
           name: call.name,
           response: {
             result: 'ok',
-            message: 'Item dihapus dari keranjang. Konfirmasi singkat.',
+            message: 'Item removed from the cart. Confirm briefly.',
           },
         };
       }
@@ -702,7 +782,7 @@ export class GeminiLiveSession {
         } else {
           this.lastNavigate = { productId, at: now };
           const catalogItem = lookupCatalog(productId);
-          const productName = String(args.productName ?? catalogItem?.name ?? 'Produk');
+          const productName = String(args.productName ?? catalogItem?.name ?? 'Product');
           const view = args.view === 'detail' ? 'detail' : 'catalog';
           const slug = catalogItem
             ? productPath(catalogItem.id, catalogItem.slug)

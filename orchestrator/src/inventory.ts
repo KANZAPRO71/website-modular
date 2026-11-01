@@ -26,8 +26,8 @@ export function lookupInventory(productId: string | null | undefined): Inventory
   }
 
   if (!productId) {
-    return { name: 'Produk Butik DEVI', stock: 5, sizes: ['M', 'L'] };
+    return { name: 'SHOP.CO product', stock: 5, sizes: ['M', 'L'] };
   }
 
-  return { name: `Produk #${productId}`, stock: 3, sizes: ['M', 'L'] };
+  return { name: `Product #${productId}`, stock: 3, sizes: ['M', 'L'] };
 }

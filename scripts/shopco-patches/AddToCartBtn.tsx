@@ -31,7 +31,7 @@ const AddToCartBtn = ({ data }: { data: Product & { quantity: number } }) => {
         )
       }
     >
-      Tambah ke Keranjang
+      Add to Cart
     </button>
   );
 };

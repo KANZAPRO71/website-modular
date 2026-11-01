@@ -54,14 +54,16 @@ export function ProductAssistantPanel({
 
   const statusLabel =
     connectionState === 'connecting'
-      ? 'Menghubungkan...'
+      ? 'Connecting...'
+      : connectionState === 'error'
+        ? 'Assistant unavailable — check microphone permissions and the voice server.'
       : isSpeaking && !isAudioMuted
-        ? 'Asisten berbicara...'
+        ? 'Assistant speaking...'
         : isListening
-          ? 'Mendengarkan...'
+          ? 'Listening...'
           : interactionMode === 'text'
-            ? 'Mode ketik — silakan tulis pesan'
-            : 'Siap membantu';
+            ? 'Text mode — type a message'
+            : 'Ready to help';
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -79,16 +81,16 @@ export function ProductAssistantPanel({
     <div className="mt-2 w-full lg:max-w-[295px] rounded-[16px] border border-black/10 bg-white shadow-sm overflow-hidden">
       <div className="flex items-center justify-between gap-2 border-b border-black/5 px-3 py-2">
         <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-black/45">Asisten Butik</p>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-black/45">Store Assistant</p>
           <p className="truncate text-xs font-medium text-black">{product.productName}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Tutup asisten"
+          aria-label="Close assistant"
           className="shrink-0 rounded-full px-2 py-1 text-xs text-black/55 hover:bg-black/5"
         >
-          Tutup
+          Close
         </button>
       </div>
 
@@ -99,8 +101,8 @@ export function ProductAssistantPanel({
         {messages.length === 0 ? (
           <p className="text-xs leading-relaxed text-black/55">
             {isNight
-              ? 'Mode malam: matikan suara dan ketik pertanyaanmu di bawah.'
-              : 'Tanya ukuran, stok, atau bahan produk ini. Bisa suara atau ketik.'}
+              ? 'Night mode: mute audio and type your question below.'
+              : 'Ask about sizes, stock, or materials for this item. Voice or text.'}
           </p>
         ) : (
           messages.map((message) => (
@@ -144,7 +146,7 @@ export function ProductAssistantPanel({
             interactionMode === 'voice' ? 'bg-black text-white' : 'text-black/60 hover:bg-black/5'
           }`}
         >
-          Suara
+          Voice
         </button>
         <button
           type="button"
@@ -153,7 +155,7 @@ export function ProductAssistantPanel({
             interactionMode === 'text' ? 'bg-black text-white' : 'text-black/60 hover:bg-black/5'
           }`}
         >
-          Ketik
+          Text
         </button>
         <button
           type="button"
@@ -161,9 +163,9 @@ export function ProductAssistantPanel({
           className={`rounded-full px-2.5 py-1 text-[11px] ${
             isAudioMuted ? 'bg-black/8 text-black/70' : 'text-black/60 hover:bg-black/5'
           }`}
-          title="Matikan suara asisten"
+          title="Mute assistant audio"
         >
-          {isAudioMuted ? '🔇 Bisukan' : '🔊 Suara'}
+          {isAudioMuted ? '🔇 Muted' : '🔊 Sound'}
         </button>
       </div>
 
@@ -173,7 +175,7 @@ export function ProductAssistantPanel({
             type="text"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder="Ketik pertanyaanmu..."
+            placeholder="Type your question..."
             className="min-w-0 flex-1 rounded-full border border-black/10 px-3 py-2 text-xs outline-none focus:border-black/30"
           />
           <button
@@ -181,7 +183,7 @@ export function ProductAssistantPanel({
             disabled={!draft.trim()}
             className="shrink-0 rounded-full bg-black px-3 py-2 text-xs font-medium text-white disabled:opacity-40"
           >
-            Kirim
+            Send
           </button>
         </form>
       ) : (
@@ -192,7 +194,7 @@ export function ProductAssistantPanel({
               onClick={onInterrupt}
               className="rounded-full border border-black/15 px-3 py-1.5 text-xs hover:bg-black/5"
             >
-              Potong
+              Interrupt
             </button>
           ) : null}
           <button
@@ -200,7 +202,7 @@ export function ProductAssistantPanel({
             onClick={onToggleListening}
             className="rounded-full bg-black px-3 py-1.5 text-xs font-medium text-white"
           >
-            {isListening ? 'Stop Mic' : 'Mulai Mic'}
+            {isListening ? 'Stop Mic' : 'Start Mic'}
           </button>
         </div>
       )}

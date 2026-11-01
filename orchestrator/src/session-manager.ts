@@ -45,14 +45,14 @@ export class SessionManager {
   }
 
   buildGreeting(): string {
-    const productName = this.productContext.productName ?? 'produk ini';
+    const productName = this.productContext.productName ?? 'this product';
     const stock = lookupInventory(this.productContext.productId);
 
     if (stock.stock <= 0) {
-      return `Halo kak! Tertarik dengan ${productName}? Maaf ya, stoknya lagi habis. Mau saya rekomendasikan alternatif serupa?`;
+      return `Hello! Are you interested in the ${productName}? It is currently out of stock. Would you like a similar recommendation?`;
     }
 
-    return `Wah, ${productName} ya kak? Pilihan bagus — biasanya pakai ukuran apa? Stok masih ${stock.stock} pcs, size ${stock.sizes.join(', ')} ready kok.`;
+    return `The ${productName} is a great choice! What size do you usually wear? We have ${stock.stock} in stock in sizes ${stock.sizes.join(', ')}.`;
   }
 
   getRecentHistory(limit = 6): ConversationTurn[] {

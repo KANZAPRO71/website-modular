@@ -203,6 +203,17 @@ export function DuplexWidgetProvider({ children, ...options }: DuplexWidgetProvi
     [voice],
   );
 
+  const startListeningSafely = useCallback(
+    async (context?: ProductContext | null) => {
+      try {
+        await voice.startListening(context);
+      } catch (error) {
+        console.error('[DuplexWidget] Unable to start voice input', error);
+      }
+    },
+    [voice],
+  );
+
   const openWidget = useCallback(
     async (product?: ProductContext, options?: OpenWidgetOptions) => {
       const isNight = new Date().getHours() >= 21;
@@ -218,13 +229,17 @@ export function DuplexWidgetProvider({ children, ...options }: DuplexWidgetProvi
       setIsAudioMuted(muted);
       setIsPanelOpen(true);
 
-      await voice.startSession(enriched, mode);
+      try {
+        await voice.startSession(enriched, mode);
 
-      if (mode === 'voice' && !muted) {
-        await voice.startListening(enriched);
+        if (mode === 'voice' && !muted) {
+          await startListeningSafely(enriched);
+        }
+      } catch (error) {
+        console.error('[DuplexWidget] Unable to open voice assistant', error);
       }
     },
-    [voice],
+    [startListeningSafely, voice],
   );
 
   const closeWidget = useCallback(() => {
@@ -243,10 +258,10 @@ export function DuplexWidgetProvider({ children, ...options }: DuplexWidgetProvi
       }
 
       if (isPanelOpen && activeProduct) {
-        void voice.startListening(activeProduct);
+        void startListeningSafely(activeProduct);
       }
     },
-    [activeProduct, isPanelOpen, voice],
+    [activeProduct, isPanelOpen, startListeningSafely, voice],
   );
 
   const setAudioMuted = useCallback(
@@ -276,8 +291,8 @@ export function DuplexWidgetProvider({ children, ...options }: DuplexWidgetProvi
       return;
     }
 
-    void voice.startListening(activeProduct);
-  }, [activeProduct, voice]);
+    void startListeningSafely(activeProduct);
+  }, [activeProduct, startListeningSafely, voice]);
 
   const value = useMemo(
     () => ({

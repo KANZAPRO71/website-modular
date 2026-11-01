@@ -1,18 +1,18 @@
 import type { ProductContext } from '../types/duplex';
 
-const STORE_NAME = 'Butik DEVI';
+const STORE_NAME = 'SHOP.CO';
 
 function pageLabelFromPath(pathname: string): string {
   if (pathname.startsWith('/shop/product')) {
-    return 'Halaman detail produk';
+    return 'Product detail page';
   }
   if (pathname === '/shop' || pathname.startsWith('/shop?')) {
-    return 'Halaman toko / katalog';
+    return 'Shop / catalog page';
   }
   if (pathname === '/cart') {
-    return 'Keranjang belanja';
+    return 'Shopping cart';
   }
-  return 'Beranda Butik DEVI';
+  return 'SHOP.CO Home';
 }
 
 export function enrichProductContext(

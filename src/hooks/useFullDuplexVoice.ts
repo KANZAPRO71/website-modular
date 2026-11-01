@@ -358,78 +358,92 @@ export function useFullDuplexVoice(options: UseFullDuplexVoiceOptions): UseFullD
         productContextRef.current = context;
       }
 
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        await connect();
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
-
-      mediaStreamRef.current = stream;
-
-      const audioContext = await getAudioQueue().ensureContext();
-      const micSource = audioContext.createMediaStreamSource(stream);
-      const micAnalyser = audioContext.createAnalyser();
-      micAnalyser.fftSize = 512;
-      micSource.connect(micAnalyser);
-      micAnalyserRef.current = micAnalyser;
-
-      if (!sessionStartedRef.current) {
-        scheduleGreetingFallback();
-
-        wsRef.current?.send(
-          JSON.stringify({
-            type: 'SESSION_START',
-            context: productContextRef.current,
-            mode: 'voice',
-          }),
-        );
-        sessionStartedRef.current = true;
-      }
-
-      const processor = audioContext.createScriptProcessor(4096, 1, 1);
-      const sink = audioContext.createGain();
-      sink.gain.value = 0;
-
-      processor.onaudioprocess = (event) => {
-        if (wsRef.current?.readyState !== WebSocket.OPEN || !micUploadEnabledRef.current) {
-          return;
+      try {
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+          await connect();
         }
 
-        const pcm16 = downsampleFloat32ToPcm16(
-          event.inputBuffer.getChannelData(0),
-          audioContext.sampleRate,
-          GEMINI_INPUT_RATE,
-        );
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
 
-        wsRef.current.send(
-          JSON.stringify({
-            type: 'AUDIO_CHUNK',
-            data: pcm16ToBase64(pcm16),
-            format: 'pcm16',
-            sampleRate: GEMINI_INPUT_RATE,
-            context: productContextRef.current,
-          }),
-        );
-      };
+        mediaStreamRef.current = stream;
 
-      micSource.connect(processor);
-      processor.connect(sink);
-      sink.connect(audioContext.destination);
+        const audioContext = await getAudioQueue().ensureContext();
+        const micSource = audioContext.createMediaStreamSource(stream);
+        const micAnalyser = audioContext.createAnalyser();
+        micAnalyser.fftSize = 512;
+        micSource.connect(micAnalyser);
+        micAnalyserRef.current = micAnalyser;
 
-      pcmProcessorRef.current = processor;
-      pcmSinkRef.current = sink;
+        if (!sessionStartedRef.current) {
+          scheduleGreetingFallback();
 
-      updateConnectionState('listening');
-      setIsListening(true);
-      startVadLoop();
+          wsRef.current?.send(
+            JSON.stringify({
+              type: 'SESSION_START',
+              context: productContextRef.current,
+              mode: 'voice',
+            }),
+          );
+          sessionStartedRef.current = true;
+        }
+
+        const processor = audioContext.createScriptProcessor(4096, 1, 1);
+        const sink = audioContext.createGain();
+        sink.gain.value = 0;
+
+        processor.onaudioprocess = (event) => {
+          if (wsRef.current?.readyState !== WebSocket.OPEN || !micUploadEnabledRef.current) {
+            return;
+          }
+
+          const pcm16 = downsampleFloat32ToPcm16(
+            event.inputBuffer.getChannelData(0),
+            audioContext.sampleRate,
+            GEMINI_INPUT_RATE,
+          );
+
+          wsRef.current.send(
+            JSON.stringify({
+              type: 'AUDIO_CHUNK',
+              data: pcm16ToBase64(pcm16),
+              format: 'pcm16',
+              sampleRate: GEMINI_INPUT_RATE,
+              context: productContextRef.current,
+            }),
+          );
+        };
+
+        micSource.connect(processor);
+        processor.connect(sink);
+        sink.connect(audioContext.destination);
+
+        pcmProcessorRef.current = processor;
+        pcmSinkRef.current = sink;
+
+        updateConnectionState('listening');
+        setIsListening(true);
+        startVadLoop();
+      } catch (error) {
+        stopListening();
+        reportError(error instanceof Error ? error : new Error(String(error)));
+        throw error;
+      }
     },
-    [connect, getAudioQueue, scheduleGreetingFallback, startVadLoop, updateConnectionState],
+    [
+      connect,
+      getAudioQueue,
+      reportError,
+      scheduleGreetingFallback,
+      startVadLoop,
+      stopListening,
+      updateConnectionState,
+    ],
   );
 
   const disconnect = useCallback(() => {

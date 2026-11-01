@@ -36,6 +36,8 @@ export function VoiceWidgetOverlay({
       ? 'Listening...'
       : connectionState === 'connecting'
         ? 'Connecting...'
+        : connectionState === 'error'
+          ? 'Assistant unavailable — check microphone permissions and the voice server.'
         : 'Ready';
 
   return (

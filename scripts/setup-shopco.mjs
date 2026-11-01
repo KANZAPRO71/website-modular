@@ -31,7 +31,7 @@ function run(command, cwd = ROOT) {
 }
 
 function ensureShopcoClone() {
-  if (existsSync(join(SHOPCO_DIR, '.git'))) {
+  if (existsSync(join(SHOPCO_DIR, '.git')) || existsSync(join(SHOPCO_DIR, 'package.json'))) {
     log('clone', 'shopco/ already exists — skipping clone');
     return;
   }

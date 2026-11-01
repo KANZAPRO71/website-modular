@@ -32,7 +32,7 @@ export function DuplexNavigationBridge() {
       switchToProduct({
         productId: String(product.id),
         productName: product.title,
-        stockStatus: 'Tersedia',
+        stockStatus: 'In Stock',
       });
 
       const slug = detail.slug ?? getProductPath(product);

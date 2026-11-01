@@ -30,3 +30,15 @@ shopco/.git/
 
 # TypeScript
 *.tsbuildinfo
+
+# IDE
+.vscode/
+
+# Local tools & helper scripts
+scripts/*.exe
+scripts/patch*.mjs
+scripts/update-*.mjs
+scripts/fix-*.mjs
+shopco/electron/
+shopco/release/
+shopco/electron-builder.json
