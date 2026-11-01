@@ -17,6 +17,7 @@ export class AudioQueueManager {
   private isProcessing = false;
   private interrupted = false;
   private defaultSampleRate: number;
+  private lastPlaybackEndedAt = 0;
 
   constructor(defaultSampleRate = 24_000) {
     this.defaultSampleRate = defaultSampleRate;
@@ -32,6 +33,13 @@ export class AudioQueueManager {
 
   get isPlaying(): boolean {
     return this.scheduledSources.length > 0 || this.queue.length > 0 || this.isProcessing;
+  }
+
+  get isPlayingOrEchoing(): boolean {
+    if (this.isPlaying) {
+      return true;
+    }
+    return Date.now() - this.lastPlaybackEndedAt < 850;
   }
 
   async ensureContext(): Promise<AudioContext> {
@@ -81,6 +89,7 @@ export class AudioQueueManager {
     }
 
     this.scheduledSources = [];
+    this.lastPlaybackEndedAt = 0;
   }
 
   async destroy(): Promise<void> {
@@ -120,6 +129,9 @@ export class AudioQueueManager {
       this.scheduledSources.push(source);
       source.onended = () => {
         this.scheduledSources = this.scheduledSources.filter((node) => node !== source);
+        if (this.scheduledSources.length === 0 && this.queue.length === 0) {
+          this.lastPlaybackEndedAt = Date.now();
+        }
       };
     }
 

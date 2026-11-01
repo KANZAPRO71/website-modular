@@ -172,21 +172,10 @@ export function useFullDuplexVoice(options: UseFullDuplexVoiceOptions): UseFullD
         sumSquares += buffer[i] * buffer[i];
       }
 
-      const rms = Math.sqrt(sumSquares / buffer.length);
-      const pastGracePeriod =
-        Date.now() - speakingStartedAtRef.current > SPEAKING_GRACE_MS;
       const assistantIsSpeaking = getAudioQueue().isPlaying;
-
-      if (rms > vadThreshold && assistantIsSpeaking && pastGracePeriod) {
-        speechFrames += 1;
-      } else {
-        speechFrames = 0;
-      }
-
-      if (speechFrames >= SPEECH_CONFIRMATION_FRAMES) {
-        speechFrames = 0;
-        speakingStartedAtRef.current = Date.now();
-        interrupt();
+      setIsSpeaking(assistantIsSpeaking);
+      if (!assistantIsSpeaking && connectionStateRef.current === 'speaking') {
+        updateConnectionState(mediaStreamRef.current ? 'listening' : 'connected');
       }
 
       vadFrameRef.current = requestAnimationFrame(tick);
@@ -442,7 +431,11 @@ export function useFullDuplexVoice(options: UseFullDuplexVoiceOptions): UseFullD
         const sink = audioContext.createGain();
         sink.gain.value = 0;
         const processor = await createMicCaptureNode(audioContext, (samples) => {
-          if (wsRef.current?.readyState !== WebSocket.OPEN || !micUploadEnabledRef.current) {
+          if (
+            wsRef.current?.readyState !== WebSocket.OPEN ||
+            !micUploadEnabledRef.current ||
+            getAudioQueue().isPlayingOrEchoing
+          ) {
             return;
           }
 

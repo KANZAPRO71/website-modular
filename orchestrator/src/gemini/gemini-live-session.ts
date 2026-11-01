@@ -207,6 +207,8 @@ function buildSystemInstruction(context: ProductContext): string {
     '**VOICE RULES**',
     'Do not repeat greetings on subsequent turns. Every response is fresh and directly answers what was asked.',
     'After navigate_to_product: screen automatically updates — remain silent unless asked.',
+    'NEVER talk to yourself or answer your own questions. If the user input sounds like an echo of what you just said, or is faint background noise / a random syllable, stay completely silent and wait for the customer.',
+    'After finishing your 1-2 sentence reply, STOP immediately and wait for the customer to speak.',
     '',
     '**TOOLS (internal)**',
     'navigate_to_product: view=catalog or view=detail.',
@@ -231,6 +233,8 @@ export class GeminiLiveSession {
   private closed = false;
   private pendingInputs: Array<{ type: 'audio' | 'text'; data: string }> = [];
   private forwardAudio = true;
+  private modelGenerating = false;
+  private playbackEndsAt = 0;
   private userTranscript = '';
   private modelTranscript = '';
   private lastSentTranscript = { user: '', model: '' };
@@ -263,6 +267,8 @@ export class GeminiLiveSession {
     this.callbacks = callbacks;
     this.closed = false;
     this.forwardAudio = true;
+    this.modelGenerating = false;
+    this.playbackEndsAt = 0;
     this.userTranscript = '';
     this.modelTranscript = '';
     this.lastSentTranscript = { user: '', model: '' };
@@ -333,6 +339,8 @@ export class GeminiLiveSession {
     this.session = session;
 
     if (!resumed) {
+      this.modelGenerating = true;
+      this.playbackEndsAt = Date.now() + 1800;
       const label = spokenProductLabel(this.context);
       this.session.sendClientContent({
         turns: [
@@ -420,6 +428,10 @@ export class GeminiLiveSession {
       return;
     }
 
+    if (this.modelGenerating || Date.now() < this.playbackEndsAt + 1200) {
+      return;
+    }
+
     this.forwardAudio = true;
 
     this.session.sendRealtimeInput({
@@ -451,6 +463,8 @@ export class GeminiLiveSession {
 
   interrupt(): void {
     this.forwardAudio = false;
+    this.modelGenerating = false;
+    this.playbackEndsAt = 0;
   }
 
   updateProductContext(context: ProductContext): void {
@@ -606,6 +620,8 @@ export class GeminiLiveSession {
 
     if (content?.interrupted) {
       this.forwardAudio = false;
+      this.modelGenerating = false;
+      this.playbackEndsAt = 0;
       this.finalizeTranscripts(callbacks);
       callbacks.onInterrupted();
       this.userTranscript = '';
@@ -632,6 +648,7 @@ export class GeminiLiveSession {
     }
 
     if (content?.turnComplete) {
+      this.modelGenerating = false;
       this.finalizeTranscripts(callbacks);
       this.flushPendingContext();
     }
@@ -642,6 +659,10 @@ export class GeminiLiveSession {
       const inlineData = part.inlineData;
 
       if (inlineData?.data && this.forwardAudio) {
+        this.modelGenerating = true;
+        const pcmBytes = Math.floor((inlineData.data.length * 3) / 4);
+        const durationMs = Math.ceil((pcmBytes / (OUTPUT_SAMPLE_RATE * 2)) * 1000);
+        this.playbackEndsAt = Math.max(Date.now(), this.playbackEndsAt) + durationMs;
         callbacks.onAudioChunk(inlineData.data, OUTPUT_SAMPLE_RATE);
       }
     }
