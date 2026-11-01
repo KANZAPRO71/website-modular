@@ -14,7 +14,7 @@ import { AudioQueueManager } from '../utils/audioQueueManager';
 import { downsampleFloat32ToPcm16, GEMINI_INPUT_RATE, pcm16ToBase64 } from '../utils/pcmCapture';
 
 const DEFAULT_CHUNK_INTERVAL_MS = 100;
-const PCM_CAPTURE_WORKLET_URL = '/pcm-capture-worklet.js';
+const PCM_CAPTURE_WORKLET_URL = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/pcm-capture-worklet.js`;
 const SPEAKING_GRACE_MS = 1_200;
 const SPEECH_CONFIRMATION_FRAMES = 8;
 const captureWorkletModules = new WeakMap<AudioContext, Promise<void>>();

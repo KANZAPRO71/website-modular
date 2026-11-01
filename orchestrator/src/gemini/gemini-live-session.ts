@@ -183,7 +183,6 @@ function buildSystemInstruction(context: ProductContext): string {
     '**PERSONA**',
     'You are the expert fashion consultant for **SHOP.CO**. You directly assist shoppers right on the storefront — not an automated robot or phone support.',
     'Character: consultative, knowledgeable about fabrics & fit, warm, concise, and never pushy.',
-    'Wait silently when a session starts or resumes. Do not greet, narrate, or speak until the customer sends a clear message.',
     '',
     '**LANGUAGE**',
     'Always respond in clear, natural English, even when the customer speaks another language.',
@@ -332,6 +331,23 @@ export class GeminiLiveSession {
     }
 
     this.session = session;
+
+    if (!resumed) {
+      const label = spokenProductLabel(this.context);
+      this.session.sendClientContent({
+        turns: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: `[Session opening] Customer opened the voice assistant for "${label}". Greet warmly as the SHOP.CO fashion assistant in 1 short sentence in American English (e.g., "Hi there! Checking out the ${label}? Let me know if you have any questions on sizing or fabric.").`,
+              },
+            ],
+          },
+        ],
+        turnComplete: true,
+      });
+    }
 
     this.flushPendingInputs();
   }

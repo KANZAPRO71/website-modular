@@ -43,19 +43,17 @@ function getDynamicDuplexWsUrl(): string {
 
     try {
       const saved = localStorage.getItem("shopco_duplex_ws_url");
-      if (saved) return saved;
+      if (saved && !saved.includes("shopco-gemini-orchestrator.onrender.com")) {
+        return saved;
+      }
     } catch {}
 
     if (window.location.protocol === "https:") {
-      const envUrl = process.env.NEXT_PUBLIC_DUPLEX_WS_URL;
-      if (envUrl && envUrl.startsWith("wss://")) {
-        return envUrl;
-      }
       return DEFAULT_CLOUD_WSS;
     }
   }
 
-  return process.env.NEXT_PUBLIC_DUPLEX_WS_URL || "ws://localhost:8787";
+  return "ws://localhost:8787";
 }
 
 function normalizeSize(size: string): string {

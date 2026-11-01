@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_BASE_PATH: /website-modular
-      NEXT_PUBLIC_DUPLEX_WS_URL: ${{ vars.NEXT_PUBLIC_DUPLEX_WS_URL || 'wss://cycles-hunter-pull-romance.trycloudflare.com' }}
+      NEXT_PUBLIC_DUPLEX_WS_URL: wss://cycles-hunter-pull-romance.trycloudflare.com
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
