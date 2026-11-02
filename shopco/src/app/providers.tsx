@@ -28,7 +28,7 @@ type Props = {
   children: React.ReactNode;
 };
 
-const DEFAULT_CLOUD_WSS = "wss://cycles-hunter-pull-romance.trycloudflare.com";
+const DEFAULT_CLOUD_WSS = "wss://saturn-semester-nearest-northwest.trycloudflare.com";
 
 function getDynamicDuplexWsUrl(): string {
   if (typeof window !== "undefined") {
